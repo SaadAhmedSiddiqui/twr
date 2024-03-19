@@ -1,0 +1,451 @@
+<head>
+  <!--<link rel="stylesheet" href="https://cdn.plyr.io/3.7.8/plyr.css" />-->
+  <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/magnific-popup.js/1.1.0/magnific-popup.min.css"
+    integrity="sha512-+EoPw+Fiwh6eSeRK7zwIKG2MA8i3rV/DGa3tdttQGgWyatG/SkncT53KHQaS5Jh9MNOT3dmFL0FjTY08And/Cw=="
+    crossorigin="anonymous"
+    referrerpolicy="no-referrer"
+  />
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/magnific-popup.js/1.1.0/jquery.magnific-popup.js"></script>
+  <script src="https://www.twr360.org/taglib/javascript/carousel.js"></script>
+</head>
+
+<div class="main-app-container">
+  <nav class="page-nav">
+    <div class="container tabbed">
+      <ul class="tabs">
+        <!--add dynamic tabs here-->
+        <!--<li class="tab-li recent current"><a href="javascript:void(0);">Recent</a></li>-->
+      </ul>
+    </div>
+  </nav>
+
+  <div class="page-content-wrapper">
+    <div class="page-body">
+      <div class="container">
+        <section
+          class="feed programs recent_programs tab current"
+          style="display: block"
+        >
+          <!-- add dynamic feeds here -->
+        </section>
+        <section class="feed series tab" style="display: block">
+          <!-- add dynamic feeds here -->
+        </section>
+        <section class="scripture tab" style="display: block">
+          <!-- add dynamic feeds here -->
+        </section>
+      </div>
+    </div>
+
+    <aside class="page-aside" id="ministry-detail-aside">
+      <div class="container">
+        <div id="carousel" class="carousel" style="height: 456px">
+          <ul class="slides">
+            <!-- <li>
+              <img src="/images/scaled/218374/c480x480/img.jpg" />
+            </li>
+            <li class="video">
+              <a href="/media/video/custom/218383.mp4">
+                <span class="play">Play Video</span><img src="/images/scaled/218384/c480x480/img.jpg" alt="" />
+              </a>
+            </li> -->
+          </ul>
+          <ul class="thumbnails">
+            <li class=""><span></span></li>
+            <li class="current"><span></span></li>
+          </ul>
+        </div>
+
+        <ul class="ministry-actions">
+          <!-- add dynamic action buttons-->
+        </ul>
+
+        <!--elearning_user-->
+        <div class="ministry-overview">
+          <!-- add dynamic values-->
+        </div>
+
+        <section class="ministry-links">
+          <!-- add dynamic links-->
+        </section>
+
+        <section class="social_links">
+          <h2 class="social_link_title"></h2>
+          <ul class="social_media">
+            <!-- add dynamic value-->
+          </ul>
+        </section>
+        <div class="space"></div>
+      </div>
+    </aside>
+  </div>
+</div>
+
+<script>
+  const stapiAuthToken =
+    "03daa1923c271fab58299036824e1e97e4ed5ae38419e6ec7bc143b1437d2829d096483395d23083990f500a7f74113220407136c990332336fe96b8bfb9d05dcbad800f07cbaa4c9bf4a7c85cfb72bf513f975ed30557b74f9e6849ced110b710f6203b25ecd28920c6ac5c25e7e88c6a4164d4426e3556e33a0a66ccdc723c";
+  const landing_page_url =
+    "http://localhost:1337/api/landing-pages?populate=deep";
+  let landingPageData = {};
+
+  fetch(landing_page_url, {
+    headers: { Authorization: `bearer ${stapiAuthToken}` },
+  })
+    .then((response) => response.json())
+    .then((response) => {
+      let landingPageData = response?.data?.find((page) => {
+        return location.pathname == `/${page.attributes?.url}`;
+      });
+
+      console.log("landingPageData", landingPageData);
+      renderPageData(landingPageData?.attributes);
+    })
+    .catch((error) => console.error("Error:", error));
+
+  function renderPageData(data = {}) {
+    allTabs = data.tabs;
+    // const pathname = window.location.pathname.substring(1);
+    $("title").text("TWR360 | " + data.title);
+
+    //Adding header title, subTitle
+    $(".page-header h1").text(data.title);
+    if (data.sub_title)
+      $(`<div class="ministry-subtitle">${data.sub_title}</div>`).insertAfter(
+        $(".page-header h1")
+      );
+
+    //Creating Tabs
+    if (data.tabs_bar_color)
+      $(".page-nav").css("background-color", data.tabs_bar_color);
+    data.tabs?.forEach((tab, index) => {
+      $(".container .tabs").append(`<li class="tab-li ${
+        index === 0 ? "current" : ""
+      } ${tab.title}-tab" style="cursor: pointer;"
+                  onclick="((e)=>{
+                      $('.tabs .current').removeClass('current');
+                      $(this).addClass('current');
+                      $('section.feed.programs').empty();
+                      $('section.feed.series').empty();
+                      $('section.scripture.tab').empty();
+                      generateFeedData(allTabs, ${index});
+                      })()"><a>${tab.title}</a></li>`);
+    });
+
+    //Creating Feeds
+    generateFeedData(allTabs, 0);
+
+    //====Creating Aside elements======
+    createAsideData(data.right_side_details);
+  }
+
+  function generateFeedData(allTabs, indx = 0) {
+    var selectedTab = allTabs[indx];
+    var feeds = selectedTab.feeds;
+    var feedClass = "";
+    let renderer;
+    if (
+      selectedTab.__component.indexOf("audio") !== -1 ||
+      selectedTab.__component.indexOf("video") !== -1
+    ) {
+      feedClass = ".feed.programs";
+      renderer = generateAudioVideoFeeds;
+    } else {
+      const isNestedTab = feeds?.data?.some(({ attributes }, index) =>
+        attributes?.links?.some(({ label }, index) => label)
+      );
+      feedClass = isNestedTab ? ".scripture.tab" : ".feed.series";
+      renderer = generateLinkFeeds;
+    }
+    window.JS_SITE_SELECTED_TAB = selectedTab;
+    paginateData(renderer, selectedTab, feedClass);
+  }
+
+  function generateAudioVideoFeeds(selectedTab, tabContainer) {
+    const {
+      feeds: { displayedData },
+      hightlightFirstItem,
+      __component,
+    } = selectedTab;
+
+    displayedData.forEach(({ attributes }, index) => {
+      let feed = attributes;
+      tabContainer.append(`<section class="${
+        hightlightFirstItem && index === 0 ? "latest_program" : ""
+      }">
+                          <header>
+                              <h1><a href="#">${feed.title}</a></h1>
+                              <time datetime="" pubdate="">${feed.date}</time>
+                              <ul class="references references-feed-${index}  ${
+        !feed.references?.length ? "display-none" : ""
+      }">
+                              </ul>
+                          </header>
+                          <p class="description">${feed.description}</p>
+                          ${
+                            __component.indexOf("audio") !== -1
+                              ? `<audio style="display: none" id="audio-${index}" controls><source src='${feed.media_url}'></source></audio>
+                              <ul class='media-actions'><li class='audio' onclick="(()=>$('#audio-' + ${index}).click())()"><a>Hear</a></li></ul>`
+                              : `<div id="video-${index}" href="${feed.media_url}" style="cursor: pointer;">
+                                  <iframe width='450' height='250' src="${feed.media_url}" allowfullscreen style="pointer-events: none;"></iframe>
+                               </div>`
+                          }
+                       </section>`);
+
+      if (__component.indexOf("video") !== -1) {
+        $(`#video-${index}`).magnificPopup({
+          type: "iframe",
+          iframe: {
+            patterns: {
+              youtube: {
+                index: "youtube.com",
+                id: "v=",
+                src: feed.media_url,
+              },
+            },
+            srcAction: "iframe_src",
+          },
+        });
+      } else {
+        $(`#audio-${index}`).click(function () {
+          //$("audio").each((index, elem) => elem.pause());
+          this.paused ? this.play() : this.pause();
+        });
+      }
+
+      //Creating feed references if available
+      //   feed?.references?.forEach((reference, index) => {
+      //     $(`.references-feed-${index}`).append(`<li>
+      //                           <a href="#" onclick="()=>{console.log("clicked on reference")}">${reference.title}</a>
+      //                           <div class="scripture">
+      //                               <div class="close">Close</div>
+      //                       		<h1></h1>
+      //                       		<div class="body"></div>
+      //                       	</div>
+      //                         </li> `);
+      //   });
+    });
+  }
+
+  function generateLinkFeeds(selectedTab, tabContainer) {
+    const {
+      feeds: { displayedData },
+    } = selectedTab;
+
+    displayedData.forEach(({ attributes }, index) => {
+      let links = attributes?.links;
+      links?.forEach((feed, index) => {
+        if (!feed.label) {
+          //feedClass = ".feed.series";
+          tabContainer.append(`<section>
+                                  <a href="${feed.url}">${feed.title}</a>
+                               </section>`);
+        } else {
+          tabContainer.append(`<section class="testament">
+                                  <h2>${feed.label}</h2>
+                                  <ul class="scripture-list multi-link-${index}"></ul>
+                               </section>`);
+
+          feed.links.forEach((feed, index) => {
+            $(`.scripture-list.multi-link-${index}`).append(`<li>
+                                      <a href="${feed.url}">${feed.title}</a>
+                                   </li>`);
+          });
+        }
+      });
+    });
+  }
+
+  function paginateData(renderer, selectedTab, feedClass) {
+    const {
+      feeds: { data },
+      paginationSize,
+    } = selectedTab;
+
+    const PAGE_SIZE = paginationSize || 0;
+    const currentPage = 1;
+    const pageCount = PAGE_SIZE ? Math.ceil(data.length / PAGE_SIZE) : 1;
+    window.JS_SITE_LIST_RENDER_FN = renderer;
+    window.JS_PAGINATOR = {
+      PAGE_SIZE,
+      currentPage,
+      pageCount,
+      selectPage,
+    };
+    window.JS_PAGINATOR.selectPage(
+      renderer,
+      selectedTab,
+      feedClass,
+      currentPage
+    );
+
+    function selectPage(renderer, selectedTab, feedClass, currentPage) {
+      const tabContainer = $(`.page-content-wrapper ${feedClass}`);
+      tabContainer.empty();
+
+      this.currentPage = currentPage;
+
+      const {
+        feeds: { data },
+        paginationSize,
+      } = selectedTab;
+
+      const { pageCount } = this;
+      if (pageCount <= 1) {
+        selectedTab.feeds.displayedData = data;
+        return renderer(selectedTab, tabContainer);
+      }
+
+      const end = currentPage * this.PAGE_SIZE;
+      const start = end - this.PAGE_SIZE;
+      selectedTab.feeds.displayedData = data.slice(start, end);
+      renderer(selectedTab, tabContainer);
+
+      const footerStr = `<footer><ol class="pager"></ol></footer>`;
+      const pagerElement = tabContainer
+        .last()
+        .append(footerStr)
+        .find("footer > ol.pager");
+
+      if (pageCount === 0) {
+        pagerElement.prop("hidden", "");
+        return;
+      }
+      const prevButton = createClickableButton("&lt;", currentPage - 1);
+      prevButton.setAttribute("className", "previous");
+      const nextButton = createClickableButton("&gt;", currentPage + 1);
+      nextButton.setAttribute("className", "next");
+
+      pagerElement.append(prevButton);
+      Array.from({ length: pageCount }).forEach((_, i) => {
+        const pageNo = i + 1;
+        let pageButton;
+        if (pageNo !== currentPage) {
+          pageButton = createClickableButton(pageNo, pageNo);
+        } else {
+          pageButton = createSelectedButton(pageNo);
+        }
+        pagerElement.append(pageButton);
+      });
+      pagerElement.append(nextButton);
+
+      if (currentPage == 1) {
+        prevButton.style.opacity = 0;
+        prevButton.style.pointerEvents = "none";
+      } else if (currentPage === pageCount) {
+        nextButton.style.opacity = 0;
+        nextButton.style.pointerEvents = "none";
+      }
+      pagerElement.removeProp("hidden");
+
+      function createClickableButton(content, pageNo) {
+        const liElement = document.createElement("li");
+        const aElement = document.createElement("a");
+        aElement.innerHTML = content;
+        aElement.setAttribute("href", "javascript:void(0)");
+        aElement.setAttribute(
+          "onclick",
+          `JS_PAGINATOR.selectPage(window.JS_SITE_LIST_RENDER_FN, window.JS_SITE_SELECTED_TAB, "${feedClass}", ${pageNo});`
+        );
+
+        //   generateLinkFeeds(selectedTab, feeds, feedClass);
+        liElement.append(aElement);
+        return liElement;
+      }
+      function createSelectedButton(content) {
+        const liElement = document.createElement("li");
+        const spanElement = document.createElement("span");
+        spanElement.innerHTML = content;
+        liElement.append(spanElement);
+        return liElement;
+      }
+    }
+  }
+
+  function createAsideData(right_side_details = {}) {
+    //Create carousel
+    createCarousel(right_side_details.carousel_links);
+
+    //Creating Actions buttons
+    let actionIconDefination = {
+      star: "favorite",
+      heart: "donate",
+      cart: "store-link",
+      none: "",
+    };
+    right_side_details?.actions_buttons?.forEach((button, index) => {
+      if (actionIconDefination[button.icon] == "favorite") {
+        $(".ministry-actions").append(`<li class="user-prefs">
+                              <div class="favorite">
+                                  <div class="toggle" style="background: ${button.color};">${button.title}</div>
+                              </div>
+                           </li>`);
+      } else {
+        $(".ministry-actions").append(`<li class="${
+          actionIconDefination[button.icon]
+        }">
+                          <a ${
+                            button.link ? 'href="' + button.link + '"' : ""
+                          } ${
+          button.link ? 'target="_blank"' : ""
+        } onclick="(()=>{console.log('clicked on action button')})()" style="background: ${
+          button.color
+        };">${button.title}</a>
+                       </li>`);
+      }
+    });
+
+    //Creating ministry overview
+    if (
+      right_side_details?.about_title &&
+      right_side_details?.about_description
+    ) {
+      $(".ministry-overview").append(`<div>
+                          <h2 class="desktop-only">${right_side_details?.about_title}</h2>
+                          <p>${right_side_details?.about_description}</p>
+                       </div>`);
+    }
+
+    //Creating ministry links
+    right_side_details?.action_links?.forEach((linkData, index) => {
+      $(".ministry-links").append(`<section class="speaker">
+                          <h2>${linkData.label}</h2>
+                          <p><span><a href="${linkData.link}" target="_blank">${linkData.link_text}</a></span> </p>
+                       </section>`);
+    });
+
+    //Creating ministry social links
+    if (right_side_details?.social_media_title)
+      $(".social_link_title").text(`${right_side_details?.social_media_title}`);
+    right_side_details?.social_links?.forEach((social, index) => {
+      $(".social_links .social_media").append(
+        `<li class="${social.icon}" style="margin: 0 2px;"><a href="${social.link}" target="_blank">${social.icon}</a></li>`
+      );
+    });
+  }
+
+  function createCarousel(carousel_links) {
+    carousel_links?.forEach((carousel, index) => {
+      let selector = $(`.carousel > .slides`);
+      if (carousel.type == "image") {
+        selector.append(`<li><img src="${carousel.link}" /></li>`);
+      } else {
+        selector.append(
+          `<li class="video"><a href="${carousel.link}"><span class="play">Play Video</span><img src="${carousel.videoThumbnail}" /></a></li>`
+        );
+      }
+    });
+
+    //Initlize carousel
+    setTimeout(() => {
+      var rf_carousel = new Carousel({
+        player_skin: "/taglib/swf/jwskins/black_plastic/black_plastic.xml",
+        controls_autohide: "none",
+        auto_cycle: "true",
+        container: "carousel",
+      });
+    }, 500);
+  }
+</script>

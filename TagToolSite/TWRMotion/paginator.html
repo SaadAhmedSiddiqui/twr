@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <link rel="stylesheet" href="main.css" />
+  </head>
+  <body>
+    <div id="jsSiteListArea"></div>
+    <footer>
+      <ol class="pager" hidden>
+        <li class="previous">
+          <a>&lt;</a>
+        </li>
+        <li><span>1</span></li>
+        <li><span>2</span></li>
+        <li class="next">
+          <a>&gt;</a>
+        </li>
+      </ol>
+    </footer>
+  </body>
+  <script>
+    const data = Array.from({ length: 33 }).map((_, i) => ({
+      title: `Item # ${i + 1}`,
+    }));
+    const renderer = function (dataToDisplay) {
+      const listBody = document.querySelector("#jsSiteListArea");
+      listBody.innerHTML = "";
+      dataToDisplay.forEach(({ title }) => {
+        const item = document.createElement("h1");
+        item.textContent = title;
+        listBody.append(item);
+      });
+    };
+    paginateData(renderer, data);
+
+    function paginateData(renderer, data) {
+      const PAGE_SIZE = 10;
+      const currentPage = 1;
+      const pageCount = Math.ceil(data.length / PAGE_SIZE);
+      window.JS_SITE_LIST_DATA = data;
+      window.JS_SITE_LIST_RENDER_FN = renderer;
+      window.JS_PAGINATOR = {
+        PAGE_SIZE,
+        currentPage,
+        pageCount,
+        selectPage,
+      };
+      window.JS_PAGINATOR.selectPage(renderer, data, currentPage);
+
+      function selectPage(renderer, data, currentPage) {
+        this.currentPage = currentPage;
+        const { pageCount } = this;
+
+        if (pageCount > 1) {
+          const end = currentPage * this.PAGE_SIZE;
+          const start = end - this.PAGE_SIZE;
+          renderer(data.slice(start, end));
+        } else {
+          renderer(data);
+        }
+
+        const pagerElement = document.querySelector("footer > ol.pager");
+        pagerElement.innerHTML = "";
+        if (pageCount === 0) {
+          pagerElement.setAttribute("hidden", "");
+          return;
+        }
+        const prevButton = createClickableButton("&lt;", currentPage - 1);
+        prevButton.setAttribute("className", "previous");
+        const nextButton = createClickableButton("&gt;", currentPage + 1);
+        nextButton.setAttribute("className", "next");
+
+        pagerElement.append(prevButton);
+        Array.from({ length: pageCount }).forEach((_, i) => {
+          const pageNo = i + 1;
+          let pageButton;
+          if (pageNo !== currentPage) {
+            pageButton = createClickableButton(pageNo, pageNo);
+          } else {
+            pageButton = createSelectedButton(pageNo);
+          }
+          pagerElement.append(pageButton);
+        });
+        pagerElement.append(nextButton);
+
+        if (currentPage == 1) {
+          prevButton.style.opacity = 0;
+          prevButton.style.pointerEvents = "none";
+        } else if (currentPage === pageCount) {
+          nextButton.style.opacity = 0;
+          nextButton.style.pointerEvents = "none";
+        }
+        pagerElement.removeAttribute("hidden");
+
+        function createClickableButton(content, pageNo) {
+          const liElement = document.createElement("li");
+          const aElement = document.createElement("a");
+          aElement.innerHTML = content;
+          aElement.setAttribute("href", "javascript:void(0)");
+          aElement.setAttribute(
+            "onclick",
+            `JS_PAGINATOR.selectPage(window.JS_SITE_LIST_RENDER_FN, window.JS_SITE_LIST_DATA, ${pageNo});`
+          );
+          liElement.append(aElement);
+          return liElement;
+        }
+        function createSelectedButton(content) {
+          const liElement = document.createElement("li");
+          const spanElement = document.createElement("span");
+          spanElement.innerHTML = content;
+          liElement.append(spanElement);
+          return liElement;
+        }
+      }
+    }
+  </script>
+</html>
