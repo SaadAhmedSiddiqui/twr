@@ -7,36 +7,38 @@
     crossorigin="anonymous"
     referrerpolicy="no-referrer"
   />
+  <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/semantic-ui/2.5.0/semantic.min.css"
+    integrity="sha512-KXol4x3sVoO+8ZsWPFI/r5KBVB/ssCGB5tsv2nVOKwLg33wTFP3fmnXa47FdSVIshVTgsYk/1734xSk9aFIa4A=="
+    crossorigin="anonymous"
+    referrerpolicy="no-referrer"
+  />
   <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/magnific-popup.js/1.1.0/jquery.magnific-popup.js"></script>
   <script src="https://www.twr360.org/taglib/javascript/carousel.js"></script>
+  <script
+    src="https://cdnjs.cloudflare.com/ajax/libs/semantic-ui/2.5.0/semantic.min.js"
+    integrity="sha512-Xo0Jh8MsOn72LGV8kU5LsclG7SUzJsWGhXbWcYs2MAmChkQzwiW/yTQwdJ8w6UA9C6EVG18GHb/TrYpYCjyAQw=="
+    crossorigin="anonymous"
+    referrerpolicy="no-referrer"
+  ></script>
+  <script
+    src="https://cdnjs.cloudflare.com/ajax/libs/markdown-it/12.3.0/markdown-it.min.js"
+    integrity="sha512-q1tclxbgrDhFhGp/i9mnxITl2FQ3TCfwNj0mZ1r2USwj9WNXBpQ1au4HOBdAq8LXXWFIcsW+5dsdFHyVdk10AQ=="
+    crossorigin="anonymous"
+    referrerpolicy="no-referrer"
+  ></script>
 </head>
 
 <div class="main-app-container">
-  <nav class="page-nav">
-    <div class="container tabbed">
-      <ul class="tabs">
-        <!--add dynamic tabs here-->
-        <!--<li class="tab-li recent current"><a href="javascript:void(0);">Recent</a></li>-->
-      </ul>
-    </div>
-  </nav>
+  <nav class="page-nav"></nav>
 
   <div class="page-content-wrapper">
     <div class="page-body">
       <div class="container">
-        <section
-          class="feed programs recent_programs tab current"
-          style="display: block"
-        >
-          <!-- add dynamic feeds here -->
-        </section>
-        <section class="feed series tab" style="display: block">
-          <!-- add dynamic feeds here -->
-        </section>
-        <section class="scripture tab" style="display: block">
-          <!-- add dynamic feeds here -->
-        </section>
+        <div class="page-content-container"></div>
+        <!-- <Content append here-->
       </div>
     </div>
 
@@ -87,100 +89,455 @@
 <script>
   const stapiAuthToken =
     "03daa1923c271fab58299036824e1e97e4ed5ae38419e6ec7bc143b1437d2829d096483395d23083990f500a7f74113220407136c990332336fe96b8bfb9d05dcbad800f07cbaa4c9bf4a7c85cfb72bf513f975ed30557b74f9e6849ced110b710f6203b25ecd28920c6ac5c25e7e88c6a4164d4426e3556e33a0a66ccdc723c";
-  const landing_page_url =
-    "http://localhost:1337/api/landing-pages?populate=deep";
-  let landingPageData = {};
+  const [_, basePath] = window.location.pathname.split("/");
+  const sites_url = `http://localhost:1337/api/sites?filters[base_url][$eq]=${basePath}&populate=deep,10`;
+  let siteData = {};
 
-  fetch(landing_page_url, {
+  fetch(sites_url, {
     headers: { Authorization: `bearer ${stapiAuthToken}` },
   })
     .then((response) => response.json())
     .then((response) => {
-      let landingPageData = response?.data?.find((page) => {
-        return location.pathname == `/${page.attributes?.url}`;
-      });
+      const site = response?.data[0]?.attributes;
 
-      console.log("landingPageData", landingPageData);
-      renderPageData(landingPageData?.attributes);
+      console.log("sitesData", site);
+      if (site) {
+        const page = getPage(site);
+        generateSite(site, page);
+      }
     })
     .catch((error) => console.error("Error:", error));
 
-  function renderPageData(data = {}) {
-    allTabs = data.tabs;
-    // const pathname = window.location.pathname.substring(1);
-    $("title").text("TWR360 | " + data.title);
+  function generateSite(site, page) {
+    window.JS_SITE_SELECT_PAGE = selectPage;
+    window.JS_SITE_GENERATE_PAGE = generatePage;
+    window.JS_SITE_GENERATE_SITE_TAB = generateSiteTabs;
+    window.JS_SITE_META = site;
+    window.JS_SITE_SELECT_PAGE_ACTION = selectPageAction;
 
-    //Adding header title, subTitle
-    $(".page-header h1").text(data.title);
-    if (data.sub_title)
-      $(`<div class="ministry-subtitle">${data.sub_title}</div>`).insertAfter(
-        $(".page-header h1")
-      );
+    function selectPageAction(site, leafPage, pageEvalExpr, nav) {
+      const enable_routing =
+        nav || window.JS_SITE_CURRENT_TAB_BAR?.enable_routing;
+      let pageUrl = `${
+        window.location.origin
+      }/${site.base_url.toLowerCase()}/${leafPage.url?.toLowerCase()}`;
+      if (!nav) {
+        const navPage = window.JS_SITE_CURRENT_NAV_ITEM.page.data?.attributes;
+        if (navPage) {
+          pageUrl = `${
+            window.location.origin
+          }/${site.base_url.toLowerCase()}/${navPage.url.toLowerCase()}/${leafPage.url?.toLowerCase()}`;
+        }
+      }
 
-    //Creating Tabs
-    if (data.tabs_bar_color)
-      $(".page-nav").css("background-color", data.tabs_bar_color);
-    data.tabs?.forEach((tab, index) => {
-      $(".container .tabs").append(`<li class="tab-li ${
-        index === 0 ? "current" : ""
-      } ${tab.title}-tab" style="cursor: pointer;"
-                  onclick="((e)=>{
-                      $('.tabs .current').removeClass('current');
-                      $(this).addClass('current');
-                      $('section.feed.programs').empty();
-                      $('section.feed.series').empty();
-                      $('section.scripture.tab').empty();
-                      generateFeedData(allTabs, ${index});
-                      })()"><a>${tab.title}</a></li>`);
-    });
+      let shouldRoute = false;
+      let buttonHref = "javascript:void(0)";
+      let fullUrl = "";
 
-    //Creating Feeds
-    generateFeedData(allTabs, 0);
+      if (nav && nav.external_link) {
+        buttonHref = nav.external_link;
+        shouldRoute = false;
+      } else if (leafPage.url) {
+        shouldRoute = enable_routing;
+        if (enable_routing) {
+          buttonHref = pageUrl;
+        }
+        fullUrl = pageUrl;
+      }
+
+      const buttonOnClick = `JS_SITE_SELECT_PAGE(${pageEvalExpr})`;
+      const jsNavigateActions = shouldRoute
+        ? ` event.preventDefault(); history.pushState(null, null, '${fullUrl}');"`
+        : "";
+      return `onclick="${buttonOnClick};${jsNavigateActions}" href="${buttonHref}"`;
+    }
+
+    $("title").text("TWR360 | " + site.title);
+
+    //Adding header title, subTitle, sub header
+    generateHeader(site, selectPageAction);
+
+    selectPage(page);
 
     //====Creating Aside elements======
-    createAsideData(data.right_side_details);
-  }
+    generateAside(site);
 
-  function generateFeedData(allTabs, indx = 0) {
-    var selectedTab = allTabs[indx];
-    var feeds = selectedTab.feeds;
-    var feedClass = "";
-    let renderer;
-    if (
-      selectedTab.__component.indexOf("audio") !== -1 ||
-      selectedTab.__component.indexOf("video") !== -1
-    ) {
-      feedClass = ".feed.programs";
-      renderer = generateAudioVideoFeeds;
-    } else {
-      const isNestedTab = feeds?.data?.some(({ attributes }, index) =>
-        attributes?.links?.some(({ label }, index) => label)
+    function selectPage(page) {
+      console.log("===selectPage==", page);
+      const { title } = page;
+      $(".tabs .current").removeClass("current");
+      $(`.tabs li[data-title="${title}"]`).addClass("current");
+
+      $(".page-nav .site-nav-heading-bar>h2>a.selected").removeClass(
+        "selected"
       );
-      feedClass = isNestedTab ? ".scripture.tab" : ".feed.series";
-      renderer = generateLinkFeeds;
+      $(`.page-nav .site-nav-heading-bar>h2[data-title="${title}"]`)
+        .find("a")
+        .addClass("selected");
+
+      $(".sub-header-navigation .item>a.selected").removeClass("selected");
+      $(`.sub-header-navigation .item[data-title="${title}"]`)
+        .find("a")
+        .addClass("selected");
+
+      window.JS_SITE_GENERATE_SITE_TAB(
+        window.JS_SITE_META,
+        page,
+        window.JS_SITE_SELECT_PAGE_ACTION
+      );
+      window.JS_SITE_GENERATE_PAGE(page);
     }
-    window.JS_SITE_SELECTED_TAB = selectedTab;
-    paginateData(renderer, selectedTab, feedClass);
-  }
 
-  function generateAudioVideoFeeds(selectedTab, tabContainer) {
-    const {
-      feeds: { displayedData },
-      hightlightFirstItem,
-      __component,
-    } = selectedTab;
+    function generatePage(page) {
+      window.JS_SITE_SELECTED_PAGE = page;
+      const {
+        body: [
+          {
+            __component,
+            content: { data },
+            style_type,
+          },
+        ],
+        title,
+        page_config,
+      } = page;
+      pageContentContainer = $(".page-content-container");
+      pageContentContainer.attr("class", "page-content-container");
+      pageContentContainer.attr("data-title", title);
 
-    displayedData.forEach(({ attributes }, index) => {
-      let feed = attributes;
-      tabContainer.append(`<section class="${
-        hightlightFirstItem && index === 0 ? "latest_program" : ""
-      }">
+      let renderer;
+      switch (__component) {
+        case "data-body.audio-feeds":
+          pageContentContainer.addClass(
+            "feed programs recent_programs tab current"
+          );
+          renderer = generateAudioVideoPage;
+          break;
+        case "data-body.video-feeds":
+          pageContentContainer.addClass(
+            "feed programs recent_programs tab current"
+          );
+          renderer = generateAudioVideoPage;
+          break;
+        case "data-body.blog":
+          pageContentContainer.addClass("ui container");
+          renderer = generateBlogsPage;
+          break;
+        case "data-body.languages":
+          pageContentContainer.addClass(
+            style_type == "page" ? "ui container" : "language tab"
+          );
+          renderer = generateLanguagesPage;
+          break;
+        case "data-body.links":
+          pageContentContainer.addClass("feed series tab");
+          renderer = generateLinksPage;
+          break;
+        case "data-body.section-links":
+          pageContentContainer.addClass("scripture tab");
+          renderer = generateSectionLinksPage;
+          break;
+        case "data-body.ministries":
+          pageContentContainer.addClass("ui container");
+          renderer = generateMinistriesPage;
+          break;
+        case "data-body.ministry-videos":
+          pageContentContainer.addClass("ui container");
+          renderer = generateMinistryVideosPage;
+          break;
+        case "data-body.posts":
+          pageContentContainer.addClass("ui container");
+          renderer = generatePostsPage;
+          break;
+        default:
+          console.log("==No Page Found==");
+      }
+
+      const PAGE_SIZE = page_config?.paginationSize || 0;
+      const pageCount = PAGE_SIZE ? Math.ceil(data.length / PAGE_SIZE) : 1;
+      window.JS_SITE_LIST_RENDER_FN = renderer;
+      window.JS_PAGINATOR = {
+        PAGE_SIZE,
+        currentPage: 1,
+        pageCount,
+        selectPaginator,
+      };
+      window.JS_PAGINATOR.selectPaginator(
+        renderer,
+        page,
+        window.JS_PAGINATOR.currentPage
+      );
+
+      function selectPaginator(renderer, page, currentPage) {
+        const pageContentContainer = $(".page-content-container");
+        pageContentContainer.empty();
+
+        this.currentPage = currentPage;
+
+        const {
+          body: [
+            {
+              content: { data },
+            },
+          ],
+        } = page;
+
+        const { pageCount } = this;
+        let displayedData = data;
+        if (pageCount <= 1) {
+          page.body[0].content.displayedData = displayedData;
+          return renderer(page, pageContentContainer, displayedData);
+        }
+
+        const end = currentPage * this.PAGE_SIZE;
+        const start = end - this.PAGE_SIZE;
+        displayedData = data.slice(start, end);
+        page.body[0].content.displayedData = displayedData;
+        renderer(page, pageContentContainer, displayedData);
+
+        const footerStr = `<footer><ol class="pager"></ol></footer>`;
+        const pagerElement = pageContentContainer
+          .last()
+          .append(footerStr)
+          .find("footer > ol.pager");
+
+        if (pageCount === 0) {
+          pagerElement.prop("hidden", "");
+          return;
+        }
+        const prevButton = createClickableButton("&lt;", currentPage - 1);
+        prevButton.setAttribute("className", "previous");
+        const nextButton = createClickableButton("&gt;", currentPage + 1);
+        nextButton.setAttribute("className", "next");
+
+        pagerElement.append(prevButton);
+        Array.from({ length: pageCount }).forEach((_, i) => {
+          const pageNo = i + 1;
+          let pageButton;
+          if (pageNo !== currentPage) {
+            pageButton = createClickableButton(pageNo, pageNo);
+          } else {
+            pageButton = createSelectedButton(pageNo);
+          }
+          pagerElement.append(pageButton);
+        });
+        pagerElement.append(nextButton);
+
+        if (currentPage == 1) {
+          prevButton.style.opacity = 0;
+          prevButton.style.pointerEvents = "none";
+        } else if (currentPage === pageCount) {
+          nextButton.style.opacity = 0;
+          nextButton.style.pointerEvents = "none";
+        }
+        pagerElement.removeProp("hidden");
+
+        function createClickableButton(content, pageNo) {
+          const liElement = document.createElement("li");
+          const aElement = document.createElement("a");
+          aElement.innerHTML = content;
+          aElement.setAttribute("href", "javascript:void(0)");
+          aElement.setAttribute(
+            "onclick",
+            `JS_PAGINATOR.selectPaginator(window.JS_SITE_LIST_RENDER_FN, window.JS_SITE_SELECTED_PAGE, ${pageNo});`
+          );
+
+          liElement.append(aElement);
+          return liElement;
+        }
+        function createSelectedButton(content) {
+          const liElement = document.createElement("li");
+          const spanElement = document.createElement("span");
+          spanElement.innerHTML = content;
+          liElement.append(spanElement);
+          return liElement;
+        }
+      }
+
+      function generateBlogsPage(page, pageContentContainer, displayedData) {
+        const {
+          attributes: { body: blogMarkdownText, title },
+        } = displayedData;
+
+        const md = window.markdownit();
+        const markdownHtml = md.render(blogMarkdownText);
+        pageContentContainer.append(`
+          <div>
+            <div class="ui text container" data-title="blog-page">
+              ${markdownHtml}
+            </div>
+          </div>
+        `);
+      }
+
+      function generateLanguagesPage(
+        page,
+        pageContentContainer,
+        displayedData
+      ) {
+        const {
+          body: [{ style_type }],
+        } = page;
+        if (style_type == "page") {
+          pageContentContainer.append(`
+          <div>
+            <div class="ui pointing secondary stackable menu">
+              <h2 class="header item">${page.title}</h2>
+              <div class="right item">
+                <div class="ui icon input">
+                  <input placeholder="Filter ${page.title}..." type="text">
+                  <i aria-hidden="true" class="search icon"></i>
+                </div>
+              </div>
+            </div>
+            <div class="ui padded three column grid" data-title="languages-page"></div>
+          </div>
+        `);
+          displayedData.forEach(({ attributes: language }) => {
+            pageContentContainer
+              .find(`div[data-title="languages-page"]`)
+              .append(
+                `<li class="column"><a href="${
+                  language.url || "javascript:void(0)"
+                }">${language.label}</a></li>`
+              );
+          });
+        } else {
+          pageContentContainer.append(`<ul class="language-list"></ul>`);
+          displayedData.forEach(({ attributes: language }, index) => {
+            pageContentContainer
+              .children("ul")
+              .append(
+                `<li><a href="${language.url || "javascript:void(0)"}">${
+                  language.label
+                }</a></li>`
+              );
+          });
+        }
+      }
+
+      function generateMinistriesPage(
+        page,
+        pageContentContainer,
+        displayedData
+      ) {
+        pageContentContainer.append(`
+          <div>
+            <div class="ui pointing secondary stackable menu">
+              <h2 class="header item">${page.title}</h2>
+              <div class="right item">
+                <div class="ui icon input">
+                  <input placeholder="Filter ${page.title}..." type="text">
+                  <i aria-hidden="true" class="search icon"></i>
+                </div>
+              </div>
+            </div>
+            <div class="ui centered cards" data-title="minitries-page"></div>
+          </div>
+        `);
+
+        displayedData.forEach(({ attributes: ministry }) => {
+          pageContentContainer.find(`div[data-title="minitries-page"]`).append(
+            `<a class="ui card" href="${ministry.link || "javascript:void(0)"}">
+            <img src="${ministry.image_url}" alt="${
+              ministry.title
+            }" class="ui fluid image"/>
+            <div class="content">
+              <div class="header">${ministry.title}</div>
+              <div class="description">${ministry.description}</div>
+            </div>
+          </a>`
+          );
+        });
+      }
+
+      function generateMinistryVideosPage(
+        page,
+        pageContentContainer,
+        displayedData
+      ) {
+        console.log("=== generateMinistryVideosPage ===");
+
+        pageContentContainer.append(
+          `<div class="ui centered cards" data-title="minitry-videos-page"></div>`
+        );
+
+        displayedData.forEach(({ attributes: ministry }) => {
+          pageContentContainer
+            .find(`div[data-title="minitry-videos-page"]`)
+            .append(
+              `<a class="ui card" href="${
+                ministry.media_url || "javascript:void(0)"
+              }">
+                <img src="${ministry.thumbnail_url}" alt="${
+                ministry.title
+              }" class="ui fluid image"/>
+                <div class="content">
+                  <div class="header">${ministry.title}</div>
+                  <div class="description">${ministry.description}</div>
+                </div>
+              </a>`
+            );
+        });
+      }
+
+      function generatePostsPage(page, pageContentContainer, displayedData) {
+        pageContentContainer.append(`
+          <div>
+            <div class="ui pointing secondary stackable menu">
+              <h2 class="header item">${page.title}</h2>
+              ${
+                page.url == "prayer-letters"
+                  ? `<div class="right item">
+                  <a href="javascript:void(0)" class="ui basic button" role="button"><i aria-hidden="true" class="mail icon"></i>Subscribe to Prayer Letter</a>
+                </div>`
+                  : ""
+              }
+              <div class="right item">
+                <div class="ui icon input">
+                  <input placeholder="Filter ${page.title}..." type="text">
+                  <i aria-hidden="true" class="search icon"></i>
+                </div>
+              </div>
+            </div>
+            <div class="ui centered cards" data-title="posts-page"></div>
+          </div>
+        `);
+
+        displayedData.forEach(({ attributes: post }) => {
+          pageContentContainer.find(`div[data-title="posts-page"]`).append(
+            `<a class="ui card" href="${post.link || "javascript:void(0)"}">
+            <img src="${post.image_url}" alt="${
+              post.title
+            }" class="ui fluid image"/>
+            <div class="content">
+              <div class="header">${post.title}</div>
+              <div class="meta">${post.date}</div>
+            </div>
+          </a>`
+          );
+        });
+      }
+
+      function generateAudioVideoPage(
+        page,
+        pageContentContainer,
+        displayedData
+      ) {
+        const { page_config } = page;
+        const hightlightFirstItem = page_config?.hightlightFirstItem || false;
+
+        displayedData.forEach(({ attributes }, index) => {
+          let feed = attributes;
+          pageContentContainer.append(`<section class="${
+            hightlightFirstItem && index === 0 ? "latest_program" : ""
+          }">
                           <header>
                               <h1><a href="#">${feed.title}</a></h1>
                               <time datetime="" pubdate="">${feed.date}</time>
                               <ul class="references references-feed-${index}  ${
-        !feed.references?.length ? "display-none" : ""
-      }">
+            !feed.references?.length ? "display-none" : ""
+          }">
                               </ul>
                           </header>
                           <p class="description">${feed.description}</p>
@@ -194,258 +551,350 @@
                           }
                        </section>`);
 
-      if (__component.indexOf("video") !== -1) {
-        $(`#video-${index}`).magnificPopup({
-          type: "iframe",
-          iframe: {
-            patterns: {
-              youtube: {
-                index: "youtube.com",
-                id: "v=",
-                src: feed.media_url,
+          if (__component.indexOf("video") !== -1) {
+            $(`#video-${index}`).magnificPopup({
+              type: "iframe",
+              iframe: {
+                patterns: {
+                  youtube: {
+                    index: "youtube.com",
+                    id: "v=",
+                    src: feed.media_url,
+                  },
+                },
+                srcAction: "iframe_src",
               },
-            },
-            srcAction: "iframe_src",
-          },
-        });
-      } else {
-        $(`#audio-${index}`).click(function () {
-          //$("audio").each((index, elem) => elem.pause());
-          this.paused ? this.play() : this.pause();
+            });
+          } else {
+            $(`#audio-${index}`).click(function () {
+              //$("audio").each((index, elem) => elem.pause());
+              this.paused ? this.play() : this.pause();
+            });
+          }
         });
       }
 
-      //Creating feed references if available
-      //   feed?.references?.forEach((reference, index) => {
-      //     $(`.references-feed-${index}`).append(`<li>
-      //                           <a href="#" onclick="()=>{console.log("clicked on reference")}">${reference.title}</a>
-      //                           <div class="scripture">
-      //                               <div class="close">Close</div>
-      //                       		<h1></h1>
-      //                       		<div class="body"></div>
-      //                       	</div>
-      //                         </li> `);
-      //   });
-    });
-  }
+      function generateLinksPage(page, pageContentContainer, displayedData) {
+        displayedData.forEach(({ attributes }, index) => {
+          pageContentContainer.append(
+            `<section> <a href="${attributes.url}">${attributes.label}</a></section>`
+          );
+        });
+      }
 
-  function generateLinkFeeds(selectedTab, tabContainer) {
-    const {
-      feeds: { displayedData },
-    } = selectedTab;
-
-    displayedData.forEach(({ attributes }, index) => {
-      let links = attributes?.links;
-      links?.forEach((feed, index) => {
-        if (!feed.label) {
-          //feedClass = ".feed.series";
-          tabContainer.append(`<section>
-                                  <a href="${feed.url}">${feed.title}</a>
-                               </section>`);
-        } else {
-          tabContainer.append(`<section class="testament">
-                                  <h2>${feed.label}</h2>
+      function generateSectionLinksPage(
+        page,
+        pageContentContainer,
+        displayedData
+      ) {
+        displayedData.forEach(({ attributes }, index) => {
+          pageContentContainer.append(`<section>
+                                  <h2>${attributes.title}</h2>
                                   <ul class="scripture-list multi-link-${index}"></ul>
                                </section>`);
 
-          feed.links.forEach((feed, index) => {
+          attributes.links?.forEach((link) => {
             $(`.scripture-list.multi-link-${index}`).append(`<li>
-                                      <a href="${feed.url}">${feed.title}</a>
+                                      <a href="${link.url}">${link.label}</a>
                                    </li>`);
           });
-        }
-      });
-    });
-  }
-
-  function paginateData(renderer, selectedTab, feedClass) {
-    const {
-      feeds: { data },
-      paginationSize,
-    } = selectedTab;
-
-    const PAGE_SIZE = paginationSize || 0;
-    const currentPage = 1;
-    const pageCount = PAGE_SIZE ? Math.ceil(data.length / PAGE_SIZE) : 1;
-    window.JS_SITE_LIST_RENDER_FN = renderer;
-    window.JS_PAGINATOR = {
-      PAGE_SIZE,
-      currentPage,
-      pageCount,
-      selectPage,
-    };
-    window.JS_PAGINATOR.selectPage(
-      renderer,
-      selectedTab,
-      feedClass,
-      currentPage
-    );
-
-    function selectPage(renderer, selectedTab, feedClass, currentPage) {
-      const tabContainer = $(`.page-content-wrapper ${feedClass}`);
-      tabContainer.empty();
-
-      this.currentPage = currentPage;
-
-      const {
-        feeds: { data },
-        paginationSize,
-      } = selectedTab;
-
-      const { pageCount } = this;
-      if (pageCount <= 1) {
-        selectedTab.feeds.displayedData = data;
-        return renderer(selectedTab, tabContainer);
-      }
-
-      const end = currentPage * this.PAGE_SIZE;
-      const start = end - this.PAGE_SIZE;
-      selectedTab.feeds.displayedData = data.slice(start, end);
-      renderer(selectedTab, tabContainer);
-
-      const footerStr = `<footer><ol class="pager"></ol></footer>`;
-      const pagerElement = tabContainer
-        .last()
-        .append(footerStr)
-        .find("footer > ol.pager");
-
-      if (pageCount === 0) {
-        pagerElement.prop("hidden", "");
-        return;
-      }
-      const prevButton = createClickableButton("&lt;", currentPage - 1);
-      prevButton.setAttribute("className", "previous");
-      const nextButton = createClickableButton("&gt;", currentPage + 1);
-      nextButton.setAttribute("className", "next");
-
-      pagerElement.append(prevButton);
-      Array.from({ length: pageCount }).forEach((_, i) => {
-        const pageNo = i + 1;
-        let pageButton;
-        if (pageNo !== currentPage) {
-          pageButton = createClickableButton(pageNo, pageNo);
-        } else {
-          pageButton = createSelectedButton(pageNo);
-        }
-        pagerElement.append(pageButton);
-      });
-      pagerElement.append(nextButton);
-
-      if (currentPage == 1) {
-        prevButton.style.opacity = 0;
-        prevButton.style.pointerEvents = "none";
-      } else if (currentPage === pageCount) {
-        nextButton.style.opacity = 0;
-        nextButton.style.pointerEvents = "none";
-      }
-      pagerElement.removeProp("hidden");
-
-      function createClickableButton(content, pageNo) {
-        const liElement = document.createElement("li");
-        const aElement = document.createElement("a");
-        aElement.innerHTML = content;
-        aElement.setAttribute("href", "javascript:void(0)");
-        aElement.setAttribute(
-          "onclick",
-          `JS_PAGINATOR.selectPage(window.JS_SITE_LIST_RENDER_FN, window.JS_SITE_SELECTED_TAB, "${feedClass}", ${pageNo});`
-        );
-
-        //   generateLinkFeeds(selectedTab, feeds, feedClass);
-        liElement.append(aElement);
-        return liElement;
-      }
-      function createSelectedButton(content) {
-        const liElement = document.createElement("li");
-        const spanElement = document.createElement("span");
-        spanElement.innerHTML = content;
-        liElement.append(spanElement);
-        return liElement;
+        });
       }
     }
-  }
 
-  function createAsideData(right_side_details = {}) {
-    //Create carousel
-    createCarousel(right_side_details.carousel_links);
+    function generateSiteTabs(site, page, selectPageAction) {
+      const tabs_bar = getTabsBar(site, page);
+      window.JS_SITE_CURRENT_TAB_BAR = tabs_bar;
+      console.log("tabs_bar", tabs_bar);
 
-    //Creating Actions buttons
-    let actionIconDefination = {
-      star: "favorite",
-      heart: "donate",
-      cart: "store-link",
-      none: "",
-    };
-    right_side_details?.actions_buttons?.forEach((button, index) => {
-      if (actionIconDefination[button.icon] == "favorite") {
-        $(".ministry-actions").append(`<li class="user-prefs">
+      if (!tabs_bar) {
+        return;
+      }
+
+      const {
+        pages: { data: pages },
+        style_type,
+        backgroud_color,
+        font_color,
+      } = tabs_bar;
+      const $pageNav = $(".page-nav").empty();
+
+      if (backgroud_color) {
+        $pageNav.css("background-color", backgroud_color);
+      }
+      if (font_color) {
+        $pageNav.css("color", font_color);
+      }
+
+      let liGenerator;
+
+      const aTagGenerator = (page, index) =>
+        `<a ${selectPageAction(
+          site,
+          page,
+          `window.JS_SITE_CURRENT_TAB_BAR.pages.data[${index}].attributes`
+        )} style="color: ${font_color || ""};">${page.title}</a>`;
+
+      if (style_type === "strip_bar") {
+        $pageNav.append(
+          `<div class="container tabbed">
+            <ul class="tabs"></ul>
+          </div>`
+        );
+        liGenerator = (page, index) =>
+          $pageNav.find(".container .tabs").append(
+            `<li class="tab-li ${page.title}-tab"
+            style="cursor: pointer;"
+            data-title="${page.title}"
+            >${aTagGenerator(page, index)}</li>`
+          );
+      } else {
+        $pageNav.append(
+          `<div class="ui container">
+            <div class="ui pointing secondary stackable menu site-nav-heading-bar"></div>
+          </div>`
+        );
+        liGenerator = (page, index) =>
+          $pageNav.find(".site-nav-heading-bar")
+            .append(`<h2 class="header item ${
+            page.title
+          }-tab" style="cursor: pointer;"
+            data-title="${page.title}">${aTagGenerator(page, index)}</h2>`);
+      }
+      pages.forEach(({ attributes: page }, index) => liGenerator(page, index));
+
+      function getTabsBar(site, page) {
+        let fromNav;
+        site.nav_bar?.some((navItem) => {
+          const navTabBarData = navItem.tabs_bar.data;
+          if (navItem.page.data?.attributes.title === page.title) {
+            fromNav =
+              navTabBarData?.attributes.pages.data.length &&
+              navTabBarData.attributes;
+            return true;
+          }
+        });
+        const siteTabBarData = site.tabs_bar.data;
+        return (
+          fromNav ||
+          (siteTabBarData?.attributes.pages.data.length &&
+            siteTabBarData.attributes)
+        );
+      }
+    }
+
+    function generateHeader(site, selectPageAction) {
+      const { header, nav_bar } = site;
+      if (!header?.sub_header) {
+        $(".page-header h1").text(site.title);
+        if (site.sub_title)
+          $(
+            `<div class="ministry-subtitle">${site.sub_title}</div>`
+          ).insertAfter($(".page-header h1"));
+      }
+
+      if (header?.banner_height)
+        $(".page-header").css({ padding: header?.banner_height });
+      if (!header?.banner_url && header?.background_color) {
+        $(".page-header").css({ background: header?.background_color });
+      }
+      if (header?.banner_url) {
+        $(".page-header").css({
+          background: `url(${header?.banner_url}) 50% no-repeat`,
+          "background-size": "cover",
+        });
+      }
+      if (header?.sub_header) {
+        $(".page-header>.container").css({ display: "none" });
+        $(".page-header").append(`
+      <div class="wrapper">
+        <div id="navigation" class="ui container">
+          ${
+            header?.sub_header.logo_url
+              ? `<img src="${header?.sub_header.logo_url}" class="ui image" />`
+              : ``
+          }
+          <h1 class="ui inverted header" ${
+            site.sub_title ? 'style="margin-bottom: 5px;"' : ""
+          }>${site.title}</h1>
+          ${
+            site.sub_title
+              ? `<h4 style="margin: 0px;">${site.sub_title}</h4>`
+              : ``
+          }
+          <div class="ui inverted secondary stackable menu sub-header-navigation"></div>
+        </div>
+      </div>
+      `);
+      }
+
+      if (site.nav_bar) {
+        site.nav_bar.map((nav, index) => {
+          const navAction = nav.external_link
+            ? `href="${nav.external_link}"`
+            : selectPageAction(
+                site,
+                nav.page.data.attributes,
+                `window.JS_SITE_META.nav_bar[${index}].page.data.attributes`,
+                nav
+              );
+          $(".page-header .sub-header-navigation").append(
+            `<div class="item" data-title="${nav.page.data.attributes.title}">
+              <a ${navAction} class="selected">${nav.short_title}</a>
+            </div>`
+          );
+          // <a class="selected" href="${nav.external_link}">${nav.short_title}</a>
+          return nav;
+        });
+      }
+    }
+
+    function generateAside(site) {
+      const { right_side_details } = site;
+      if (!right_side_details) {
+        //hide aside main div
+        $(".page-aside").addClass("display-none");
+
+        $(".page-body").css({ width: "100%" });
+
+        return;
+      }
+
+      //Create carousel
+      createCarousel(right_side_details.carousel_links);
+
+      //Creating Actions buttons
+      let actionIconDefination = {
+        star: "favorite",
+        heart: "donate",
+        cart: "store-link",
+        none: "",
+      };
+      right_side_details?.actions_buttons?.forEach((button, index) => {
+        if (actionIconDefination[button.icon] == "favorite") {
+          $(".ministry-actions").append(`<li class="user-prefs">
                               <div class="favorite">
-                                  <div class="toggle" style="background: ${button.color};">${button.title}</div>
+                                  <div class="toggle" style="background: ${button.color};">${button.label}</div>
                               </div>
                            </li>`);
-      } else {
-        $(".ministry-actions").append(`<li class="${
-          actionIconDefination[button.icon]
-        }">
+        } else {
+          $(".ministry-actions").append(`<li class="${
+            actionIconDefination[button.icon]
+          }">
                           <a ${
                             button.link ? 'href="' + button.link + '"' : ""
                           } ${
-          button.link ? 'target="_blank"' : ""
-        } onclick="(()=>{console.log('clicked on action button')})()" style="background: ${
-          button.color
-        };">${button.title}</a>
+            button.link ? 'target="_blank"' : ""
+          } onclick="(()=>{console.log('clicked on action button')})()" style="background: ${
+            button.color
+          };">${button.label}</a>
                        </li>`);
-      }
-    });
+        }
+      });
 
-    //Creating ministry overview
-    if (
-      right_side_details?.about_title &&
-      right_side_details?.about_description
-    ) {
-      $(".ministry-overview").append(`<div>
+      //Creating ministry overview
+      if (
+        right_side_details?.about_title &&
+        right_side_details?.about_description
+      ) {
+        $(".ministry-overview").append(`<div>
                           <h2 class="desktop-only">${right_side_details?.about_title}</h2>
                           <p>${right_side_details?.about_description}</p>
                        </div>`);
-    }
+      }
 
-    //Creating ministry links
-    right_side_details?.action_links?.forEach((linkData, index) => {
-      $(".ministry-links").append(`<section class="speaker">
+      //Creating ministry links
+      right_side_details?.action_links?.forEach((linkData, index) => {
+        $(".ministry-links").append(`<section class="speaker">
                           <h2>${linkData.label}</h2>
                           <p><span><a href="${linkData.link}" target="_blank">${linkData.link_text}</a></span> </p>
                        </section>`);
-    });
+      });
 
-    //Creating ministry social links
-    if (right_side_details?.social_media_title)
-      $(".social_link_title").text(`${right_side_details?.social_media_title}`);
-    right_side_details?.social_links?.forEach((social, index) => {
-      $(".social_links .social_media").append(
-        `<li class="${social.icon}" style="margin: 0 2px;"><a href="${social.link}" target="_blank">${social.icon}</a></li>`
-      );
-    });
+      //Creating ministry social links
+      if (right_side_details?.social_media_title)
+        $(".social_link_title").text(
+          `${right_side_details?.social_media_title}`
+        );
+      right_side_details?.social_links?.forEach((social, index) => {
+        $(".social_links .social_media").append(
+          `<li class="${social.icon}" style="margin: 0 2px;"><a href="${social.link}" target="_blank">${social.icon}</a></li>`
+        );
+      });
+
+      function createCarousel(carousel_links) {
+        carousel_links?.forEach((carousel, index) => {
+          let selector = $(`.carousel > .slides`);
+          if (carousel.type == "image") {
+            selector.append(`<li><img src="${carousel.link}" /></li>`);
+          } else {
+            selector.append(
+              `<li class="video"><a href="${carousel.link}"><span class="play">Play Video</span><img src="${carousel.videoThumbnail}" /></a></li>`
+            );
+          }
+        });
+
+        //Initlize carousel
+        setTimeout(() => {
+          var rf_carousel = new Carousel({
+            player_skin: "/taglib/swf/jwskins/black_plastic/black_plastic.xml",
+            controls_autohide: "none",
+            auto_cycle: "true",
+            container: "carousel",
+          });
+        }, 500);
+      }
+    }
   }
 
-  function createCarousel(carousel_links) {
-    carousel_links?.forEach((carousel, index) => {
-      let selector = $(`.carousel > .slides`);
-      if (carousel.type == "image") {
-        selector.append(`<li><img src="${carousel.link}" /></li>`);
-      } else {
-        selector.append(
-          `<li class="video"><a href="${carousel.link}"><span class="play">Play Video</span><img src="${carousel.videoThumbnail}" /></a></li>`
-        );
-      }
-    });
+  function getNavItemForPage(site){
 
-    //Initlize carousel
-    setTimeout(() => {
-      var rf_carousel = new Carousel({
-        player_skin: "/taglib/swf/jwskins/black_plastic/black_plastic.xml",
-        controls_autohide: "none",
-        auto_cycle: "true",
-        container: "carousel",
-      });
-    }, 500);
+  }
+
+  function getPage(site) {
+    let page;
+    const locationPath = window.location.pathname.slice(1).toLowerCase();
+
+    const findTab = ({ tabs_bar: { data } }, navUrl = "") =>
+      data?.attributes.pages.data.find(
+        ({ attributes: { url } }) =>
+          url &&
+          locationPath ===
+            `${site.base_url.toLowerCase()}/${navUrl}${url.toLowerCase()}`
+      );
+    window.JS_SITE_CURRENT_NAV_ITEM = undefined;
+    site.nav_bar?.some((navItem) => {
+      const navPage = navItem.page.data?.attributes;
+      if (!navPage || !navPage.url) return;
+
+      page = findTab(navItem, `${navPage.url.toLowerCase()}/`);
+      if (page) {
+        page = page.attributes;
+        window.JS_SITE_CURRENT_NAV_ITEM = navItem;
+        return true;
+      }
+      if (
+        locationPath ===
+        `${site.base_url.toLowerCase()}/${navPage.url.toLowerCase()}`
+      ) {
+        page = navPage;
+        return true;
+      }
+      return false;
+    });
+    if (page) {
+      return page;
+    }
+
+    page = findTab(site);
+    if (page) {
+      page = page.attributes;
+      return page;
+    }
+
+    page =
+      site.tabs_bar.data?.attributes.pages.data[0]?.attributes ||
+      site.nav_bar?.[0]?.page.data.attributes;
+    return page;
   }
 </script>

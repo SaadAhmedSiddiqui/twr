@@ -1,11 +1,40 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <link rel="stylesheet" href="main.css" />
+    <link rel="stylesheet" href="paginator.css" />
+    <script
+      src="https://code.jquery.com/jquery-1.12.4.min.js"
+      integrity="sha256-ZosEbRLbNQzLpnKIkEdrPv7lOy9C27hHQ+Xp8a4MxAQ="
+      crossorigin="anonymous"
+    ></script>
+    <script>
+      const page = {
+        body: [
+          {
+            content: {
+              data: Array.from({ length: 33 }).map((_, i) => ({
+                title: `Item # ${i + 1}`,
+              })),
+            },
+          },
+        ],
+        page_config: { paginationSize: 10 },
+      };
+      window.JS_SITE_SELECTED_PAGE = page;
+      const renderer = function (renderer, page, dataToDisplay) {
+        const listBody = document.querySelector("#jsSiteListArea");
+        listBody.innerHTML = "";
+        dataToDisplay.forEach(({ title }) => {
+          const item = document.createElement("h1");
+          item.textContent = title;
+          listBody.append(item);
+        });
+      };
+    </script>
   </head>
   <body>
     <div id="jsSiteListArea"></div>
-    <footer>
+    <footer class="page-content-container">
       <ol class="pager" hidden>
         <li class="previous">
           <a>&lt;</a>
@@ -19,98 +48,123 @@
     </footer>
   </body>
   <script>
-    const data = Array.from({ length: 33 }).map((_, i) => ({
-      title: `Item # ${i + 1}`,
-    }));
-    const renderer = function (dataToDisplay) {
-      const listBody = document.querySelector("#jsSiteListArea");
-      listBody.innerHTML = "";
-      dataToDisplay.forEach(({ title }) => {
-        const item = document.createElement("h1");
-        item.textContent = title;
-        listBody.append(item);
-      });
+    const {
+      body: [
+        {
+          content: { data },
+        },
+      ],
+      page_config,
+    } = page;
+
+    const PAGE_SIZE = page_config?.paginationSize || 0;
+    const pageCount = PAGE_SIZE ? Math.ceil(data.length / PAGE_SIZE) : 1;
+    window.JS_SITE_LIST_RENDER_FN = renderer;
+    window.JS_PAGINATOR = {
+      PAGE_SIZE,
+      currentPage: 1,
+      pageCount,
+      selectPaginator,
     };
-    paginateData(renderer, data);
+    window.JS_PAGINATOR.selectPaginator(
+      renderer,
+      page,
+      window.JS_PAGINATOR.currentPage
+    );
 
-    function paginateData(renderer, data) {
-      const PAGE_SIZE = 10;
-      const currentPage = 1;
-      const pageCount = Math.ceil(data.length / PAGE_SIZE);
-      window.JS_SITE_LIST_DATA = data;
-      window.JS_SITE_LIST_RENDER_FN = renderer;
-      window.JS_PAGINATOR = {
-        PAGE_SIZE,
-        currentPage,
-        pageCount,
-        selectPage,
-      };
-      window.JS_PAGINATOR.selectPage(renderer, data, currentPage);
+    function selectPaginator(renderer, page, currentPage) {
+      function defineClickAction(pageNo) {
+        return `JS_PAGINATOR.selectPaginator(window.JS_SITE_LIST_RENDER_FN, window.JS_SITE_SELECTED_PAGE, ${pageNo});`;
+      }
 
-      function selectPage(renderer, data, currentPage) {
-        this.currentPage = currentPage;
-        const { pageCount } = this;
+      const pageContentContainer = $(".page-content-container");
+      pageContentContainer.empty();
 
-        if (pageCount > 1) {
-          const end = currentPage * this.PAGE_SIZE;
-          const start = end - this.PAGE_SIZE;
-          renderer(data.slice(start, end));
+      this.currentPage = currentPage;
+
+      const {
+        body: [
+          {
+            content: { data },
+          },
+        ],
+      } = page;
+
+      const { pageCount } = this;
+      let displayedData = data;
+      if (pageCount <= 1) {
+        page.body[0].content.displayedData = displayedData;
+        return renderer(page, pageContentContainer, displayedData);
+      }
+
+      const end = currentPage * this.PAGE_SIZE;
+      const start = end - this.PAGE_SIZE;
+      displayedData = data.slice(start, end);
+      page.body[0].content.displayedData = displayedData;
+      renderer(page, pageContentContainer, displayedData);
+
+      const footerStr = `<footer><ol class="pager"></ol></footer>`;
+      const pagerElement = pageContentContainer
+        .last()
+        .append(footerStr)
+        .find("footer > ol.pager");
+
+      if (pageCount === 0) {
+        pagerElement.prop("hidden", "");
+        return;
+      }
+      const prevButton = createClickableButton(
+        "&lt;",
+        currentPage - 1,
+        defineClickAction
+      );
+      prevButton.setAttribute("className", "previous");
+      const nextButton = createClickableButton(
+        "&gt;",
+        currentPage + 1,
+        defineClickAction
+      );
+      nextButton.setAttribute("className", "next");
+
+      pagerElement.append(prevButton);
+      Array.from({ length: pageCount }).forEach((_, i) => {
+        const pageNo = i + 1;
+        let pageButton;
+        if (pageNo !== currentPage) {
+          pageButton = createClickableButton(pageNo, pageNo, defineClickAction);
         } else {
-          renderer(data);
+          pageButton = createSelectedButton(pageNo);
         }
+        pagerElement.append(pageButton);
+      });
+      pagerElement.append(nextButton);
 
-        const pagerElement = document.querySelector("footer > ol.pager");
-        pagerElement.innerHTML = "";
-        if (pageCount === 0) {
-          pagerElement.setAttribute("hidden", "");
-          return;
-        }
-        const prevButton = createClickableButton("&lt;", currentPage - 1);
-        prevButton.setAttribute("className", "previous");
-        const nextButton = createClickableButton("&gt;", currentPage + 1);
-        nextButton.setAttribute("className", "next");
+      if (currentPage == 1) {
+        prevButton.style.opacity = 0;
+        prevButton.style.pointerEvents = "none";
+      } else if (currentPage === pageCount) {
+        nextButton.style.opacity = 0;
+        nextButton.style.pointerEvents = "none";
+      }
+      pagerElement.removeProp("hidden");
 
-        pagerElement.append(prevButton);
-        Array.from({ length: pageCount }).forEach((_, i) => {
-          const pageNo = i + 1;
-          let pageButton;
-          if (pageNo !== currentPage) {
-            pageButton = createClickableButton(pageNo, pageNo);
-          } else {
-            pageButton = createSelectedButton(pageNo);
-          }
-          pagerElement.append(pageButton);
-        });
-        pagerElement.append(nextButton);
+      function createClickableButton(label, pageNo, defineClickAction) {
+        const $li = $("<li></li>");
+        const $a = $("<a></a>");
+        $a.html(label);
+        $a.attr("href", "javascript:void(0)");
+        $a.attr("onclick");
 
-        if (currentPage == 1) {
-          prevButton.style.opacity = 0;
-          prevButton.style.pointerEvents = "none";
-        } else if (currentPage === pageCount) {
-          nextButton.style.opacity = 0;
-          nextButton.style.pointerEvents = "none";
-        }
-        pagerElement.removeAttribute("hidden");
-
-        function createClickableButton(content, pageNo) {
-          const liElement = document.createElement("li");
-          const aElement = document.createElement("a");
-          aElement.innerHTML = content;
-          aElement.setAttribute("href", "javascript:void(0)");
-          aElement.setAttribute(
-            "onclick",
-            `JS_PAGINATOR.selectPage(window.JS_SITE_LIST_RENDER_FN, window.JS_SITE_LIST_DATA, ${pageNo});`
-          );
-          liElement.append(aElement);
-          return liElement;
-        }
-        function createSelectedButton(content) {
-          const liElement = document.createElement("li");
-          const spanElement = document.createElement("span");
-          spanElement.innerHTML = content;
-          liElement.append(spanElement);
-          return liElement;
-        }
+        $li.append($a);
+        return $li;
+      }
+      function createSelectedButton(label) {
+        const $li = $("<li></li>");
+        const $span = $("<span></span>");
+        $a.text(label);
+        $span.innerHTML = content;
+        $li.append($span);
+        return $li;
       }
     }
   </script>
