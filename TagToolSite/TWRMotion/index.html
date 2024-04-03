@@ -87,84 +87,226 @@
 </div>
 
 <script>
-  const stapiAuthToken =
-    "03daa1923c271fab58299036824e1e97e4ed5ae38419e6ec7bc143b1437d2829d096483395d23083990f500a7f74113220407136c990332336fe96b8bfb9d05dcbad800f07cbaa4c9bf4a7c85cfb72bf513f975ed30557b74f9e6849ced110b710f6203b25ecd28920c6ac5c25e7e88c6a4164d4426e3556e33a0a66ccdc723c";
-  const [_, basePath] = window.location.pathname.split("/");
-  const sites_url = `http://localhost:1337/api/sites?filters[base_url][$eq]=${basePath}&populate=deep,10`;
-  let siteData = {};
+  (function () {
+    "use strict";
 
-  fetch(sites_url, {
-    headers: { Authorization: `bearer ${stapiAuthToken}` },
-  })
-    .then((response) => response.json())
-    .then((response) => {
-      const site = response?.data[0]?.attributes;
+    const stapiAuthToken =
+      "03daa1923c271fab58299036824e1e97e4ed5ae38419e6ec7bc143b1437d2829d096483395d23083990f500a7f74113220407136c990332336fe96b8bfb9d05dcbad800f07cbaa4c9bf4a7c85cfb72bf513f975ed30557b74f9e6849ced110b710f6203b25ecd28920c6ac5c25e7e88c6a4164d4426e3556e33a0a66ccdc723c";
+    const [_, basePath] = window.location.pathname.split("/");
+    const sites_url = `http://localhost:1337/api/sites?filters[base_url][$eq]=${basePath}&populate=deep,10`;
+    let siteData = {};
 
-      console.log("sitesData", site);
-      if (site) {
-        const page = getPage(site);
-        generateSite(site, page);
-      }
+    window.FN_SELECT_PAGE = FN_SELECT_PAGE;
+    window.FN_GENERATE_PAGE = FN_GENERATE_PAGE;
+    window.FN_GENERATE_TAB_BAR = FN_GENERATE_TAB_BAR;
+    window.FN_SELECT_PAGE_ACTION = FN_SELECT_PAGE_ACTION;
+    window.FN_GET_NAV_ITEM_FOR_PAGE = FN_GET_NAV_ITEM_FOR_PAGE;
+    window.FN_JOIN_PATH = FN_JOIN_PATH;
+
+    fetch(sites_url, {
+      headers: { Authorization: `bearer ${stapiAuthToken}` },
     })
-    .catch((error) => console.error("Error:", error));
+      .then((response) => response.json())
+      .then((response) => {
+        const site = response?.data[0]?.attributes;
 
-  function generateSite(site, page) {
-    window.JS_SITE_SELECT_PAGE = selectPage;
-    window.JS_SITE_GENERATE_PAGE = generatePage;
-    window.JS_SITE_GENERATE_SITE_TAB = generateSiteTabs;
-    window.JS_SITE_META = site;
-    window.JS_SITE_SELECT_PAGE_ACTION = selectPageAction;
+        console.log("sitesData", site);
+        if (site) {
+          const page = getPage(site);
+          generateSite(site, page);
+        }
+      })
+      .catch((error) => console.error("Error:", error));
 
-    function selectPageAction(site, leafPage, pageEvalExpr, nav) {
-      const enable_routing =
-        nav || window.JS_SITE_CURRENT_TAB_BAR?.enable_routing;
-      let pageUrl = `${
-        window.location.origin
-      }/${site.base_url.toLowerCase()}/${leafPage.url?.toLowerCase()}`;
-      if (!nav) {
-        const navPage = window.JS_SITE_CURRENT_NAV_ITEM.page.data?.attributes;
-        if (navPage) {
-          pageUrl = `${
-            window.location.origin
-          }/${site.base_url.toLowerCase()}/${navPage.url.toLowerCase()}/${leafPage.url?.toLowerCase()}`;
+    function generateSite(site, page) {
+      window.JS_SITE_META = site;
+
+      $("title").text("TWR360 | " + site.title);
+
+      //Adding header title, subTitle, sub header
+      generateHeader(site, window.FN_SELECT_PAGE_ACTION);
+
+      FN_SELECT_PAGE(page);
+
+      //====Creating Aside elements======
+      generateAside(site);
+
+      function generateHeader(site, FN_SELECT_PAGE_ACTION) {
+        const { header } = site;
+        if (!header?.sub_header) {
+          $(".page-header h1").text(site.title);
+          if (site.sub_title)
+            $(
+              `<div class="ministry-subtitle">${site.sub_title}</div>`
+            ).insertAfter($(".page-header h1"));
+        }
+
+        if (header?.banner_height)
+          $(".page-header").css({ padding: header?.banner_height });
+        if (!header?.banner_url && header?.background_color) {
+          $(".page-header").css({ background: header?.background_color });
+        }
+        if (header?.banner_url) {
+          $(".page-header").css({
+            background: `url(${header?.banner_url}) 50% no-repeat`,
+            "background-size": "cover",
+          });
+        }
+        if (header?.sub_header) {
+          $(".page-header>.container").css({ display: "none" });
+          $(".page-header").append(`
+      <div class="wrapper">
+        <div id="navigation" class="ui container">
+          ${
+            header?.sub_header.logo_url
+              ? `<img src="${header?.sub_header.logo_url}" class="ui image" />`
+              : ``
+          }
+          <h1 class="ui inverted header" ${
+            site.sub_title ? 'style="margin-bottom: 5px;"' : ""
+          }>${site.title}</h1>
+          ${
+            site.sub_title
+              ? `<h4 style="margin: 0px;">${site.sub_title}</h4>`
+              : ``
+          }
+          <div class="ui inverted secondary stackable menu sub-header-navigation"></div>
+        </div>
+      </div>
+      `);
+        }
+
+        if (site.nav_bar && site.header.sub_header) {
+          site.nav_bar.map((nav, index) => {
+            const navAction = nav.external_link
+              ? `href="${nav.external_link}"`
+              : FN_SELECT_PAGE_ACTION(
+                  site,
+                  nav,
+                  `window.JS_SITE_META.nav_bar[${index}]`,
+                  true
+                );
+            $(".page-header .sub-header-navigation").append(
+              `<div class="item" data-title="${nav.page.data.attributes.title}">
+              <a ${navAction}>${nav.short_title}</a>
+            </div>`
+            );
+            // <a class="selected" href="${nav.external_link}">${nav.short_title}</a>
+            return nav;
+          });
         }
       }
 
-      let shouldRoute = false;
-      let buttonHref = "javascript:void(0)";
-      let fullUrl = "";
+      function generateAside(site) {
+        const { right_side_details } = site;
+        if (!right_side_details) {
+          //hide aside main div
+          $(".page-aside").addClass("display-none");
 
-      if (nav && nav.external_link) {
-        buttonHref = nav.external_link;
-        shouldRoute = false;
-      } else if (leafPage.url) {
-        shouldRoute = enable_routing;
-        if (enable_routing) {
-          buttonHref = pageUrl;
+          $(".page-body").css({ width: "100%" });
+
+          return;
         }
-        fullUrl = pageUrl;
-      }
 
-      const buttonOnClick = `JS_SITE_SELECT_PAGE(${pageEvalExpr})`;
-      const jsNavigateActions = shouldRoute
-        ? ` event.preventDefault(); history.pushState(null, null, '${fullUrl}');"`
-        : "";
-      return `onclick="${buttonOnClick};${jsNavigateActions}" href="${buttonHref}"`;
+        //Create carousel
+        createCarousel(right_side_details.carousel_links);
+
+        //Creating Actions buttons
+        let actionIconDefination = {
+          star: "favorite",
+          heart: "donate",
+          cart: "store-link",
+          none: "",
+        };
+        right_side_details?.actions_buttons?.forEach((button, index) => {
+          if (actionIconDefination[button.icon] == "favorite") {
+            $(".ministry-actions").append(`<li class="user-prefs">
+                              <div class="favorite">
+                                  <div class="toggle" style="background: ${button.color};">${button.label}</div>
+                              </div>
+                           </li>`);
+          } else {
+            $(".ministry-actions").append(`<li class="${
+              actionIconDefination[button.icon]
+            }">
+                          <a ${
+                            button.link ? 'href="' + button.link + '"' : ""
+                          } ${
+              button.link ? 'target="_blank"' : ""
+            } onclick="(()=>{console.log('clicked on action button')})()" style="background: ${
+              button.color
+            };">${button.label}</a>
+                       </li>`);
+          }
+        });
+
+        //Creating ministry overview
+        if (
+          right_side_details?.about_title &&
+          right_side_details?.about_description
+        ) {
+          $(".ministry-overview").append(`<div>
+                          <h2 class="desktop-only">${right_side_details?.about_title}</h2>
+                          <p>${right_side_details?.about_description}</p>
+                       </div>`);
+        }
+
+        //Creating ministry links
+        right_side_details?.action_links?.forEach((linkData, index) => {
+          $(".ministry-links").append(`<section class="speaker">
+                          <h2>${linkData.label}</h2>
+                          <p><span><a href="${linkData.link}" target="_blank">${linkData.link_text}</a></span> </p>
+                       </section>`);
+        });
+
+        //Creating ministry social links
+        if (right_side_details?.social_media_title)
+          $(".social_link_title").text(
+            `${right_side_details?.social_media_title}`
+          );
+        right_side_details?.social_links?.forEach((social, index) => {
+          $(".social_links .social_media").append(
+            `<li class="${social.icon}" style="margin: 0 2px;"><a href="${social.link}" target="_blank">${social.icon}</a></li>`
+          );
+        });
+
+        function createCarousel(carousel_links) {
+          carousel_links?.forEach((carousel, index) => {
+            let selector = $(`.carousel > .slides`);
+            if (carousel.type == "image") {
+              selector.append(`<li><img src="${carousel.link}" /></li>`);
+            } else {
+              selector.append(
+                `<li class="video"><a href="${carousel.link}"><span class="play">Play Video</span><img src="${carousel.videoThumbnail}" /></a></li>`
+              );
+            }
+          });
+
+          //Initlize carousel
+          setTimeout(() => {
+            var rf_carousel = new Carousel({
+              player_skin:
+                "/taglib/swf/jwskins/black_plastic/black_plastic.xml",
+              controls_autohide: "none",
+              auto_cycle: "true",
+              container: "carousel",
+            });
+          }, 500);
+        }
+      }
     }
 
-    $("title").text("TWR360 | " + site.title);
-
-    //Adding header title, subTitle, sub header
-    generateHeader(site, selectPageAction);
-
-    selectPage(page);
-
-    //====Creating Aside elements======
-    generateAside(site);
-
-    function selectPage(page) {
+    function FN_SELECT_PAGE(page) {
       console.log("===selectPage==", page);
-      const { title } = page;
+
+      window.FN_GENERATE_TAB_BAR(
+        window.JS_SITE_META,
+        page,
+        window.FN_SELECT_PAGE_ACTION
+      );
+      window.FN_GENERATE_PAGE(page);
+
+      const { title } = page.page.data.attributes;
       $(".tabs .current").removeClass("current");
       $(`.tabs li[data-title="${title}"]`).addClass("current");
 
@@ -179,16 +321,9 @@
       $(`.sub-header-navigation .item[data-title="${title}"]`)
         .find("a")
         .addClass("selected");
-
-      window.JS_SITE_GENERATE_SITE_TAB(
-        window.JS_SITE_META,
-        page,
-        window.JS_SITE_SELECT_PAGE_ACTION
-      );
-      window.JS_SITE_GENERATE_PAGE(page);
     }
 
-    function generatePage(page) {
+    function FN_GENERATE_PAGE(page) {
       window.JS_SITE_SELECTED_PAGE = page;
       const {
         body: [
@@ -200,7 +335,7 @@
         ],
         title,
         page_config,
-      } = page;
+      } = page.page.data.attributes;
       pageContentContainer = $(".page-content-container");
       pageContentContainer.attr("class", "page-content-container");
       pageContentContainer.attr("data-title", title);
@@ -273,26 +408,20 @@
         pageContentContainer.empty();
 
         this.currentPage = currentPage;
-
-        const {
-          body: [
-            {
-              content: { data },
-            },
-          ],
-        } = page;
+        const data = page.page.data.attributes.body[0].content.data;
 
         const { pageCount } = this;
         let displayedData = data;
         if (pageCount <= 1) {
-          page.body[0].content.displayedData = displayedData;
+          page.page.data.attributes.body[0].content.displayedData =
+            displayedData;
           return renderer(page, pageContentContainer, displayedData);
         }
 
         const end = currentPage * this.PAGE_SIZE;
         const start = end - this.PAGE_SIZE;
         displayedData = data.slice(start, end);
-        page.body[0].content.displayedData = displayedData;
+        page.page.data.attributes.body[0].content.displayedData = displayedData;
         renderer(page, pageContentContainer, displayedData);
 
         const footerStr = `<footer><ol class="pager"></ol></footer>`;
@@ -354,177 +483,16 @@
         }
       }
 
-      function generateBlogsPage(page, pageContentContainer, displayedData) {
-        const {
-          attributes: { body: blogMarkdownText, title },
-        } = displayedData;
-
-        const md = window.markdownit();
-        const markdownHtml = md.render(blogMarkdownText);
-        pageContentContainer.append(`
-          <div>
-            <div class="ui text container" data-title="blog-page">
-              ${markdownHtml}
-            </div>
-          </div>
-        `);
-      }
-
-      function generateLanguagesPage(
-        page,
-        pageContentContainer,
-        displayedData
-      ) {
-        const {
-          body: [{ style_type }],
-        } = page;
-        if (style_type == "page") {
-          pageContentContainer.append(`
-          <div>
-            <div class="ui pointing secondary stackable menu">
-              <h2 class="header item">${page.title}</h2>
-              <div class="right item">
-                <div class="ui icon input">
-                  <input placeholder="Filter ${page.title}..." type="text">
-                  <i aria-hidden="true" class="search icon"></i>
-                </div>
-              </div>
-            </div>
-            <div class="ui padded three column grid" data-title="languages-page"></div>
-          </div>
-        `);
-          displayedData.forEach(({ attributes: language }) => {
-            pageContentContainer
-              .find(`div[data-title="languages-page"]`)
-              .append(
-                `<li class="column"><a href="${
-                  language.url || "javascript:void(0)"
-                }">${language.label}</a></li>`
-              );
-          });
-        } else {
-          pageContentContainer.append(`<ul class="language-list"></ul>`);
-          displayedData.forEach(({ attributes: language }, index) => {
-            pageContentContainer
-              .children("ul")
-              .append(
-                `<li><a href="${language.url || "javascript:void(0)"}">${
-                  language.label
-                }</a></li>`
-              );
-          });
-        }
-      }
-
-      function generateMinistriesPage(
-        page,
-        pageContentContainer,
-        displayedData
-      ) {
-        pageContentContainer.append(`
-          <div>
-            <div class="ui pointing secondary stackable menu">
-              <h2 class="header item">${page.title}</h2>
-              <div class="right item">
-                <div class="ui icon input">
-                  <input placeholder="Filter ${page.title}..." type="text">
-                  <i aria-hidden="true" class="search icon"></i>
-                </div>
-              </div>
-            </div>
-            <div class="ui centered cards" data-title="minitries-page"></div>
-          </div>
-        `);
-
-        displayedData.forEach(({ attributes: ministry }) => {
-          pageContentContainer.find(`div[data-title="minitries-page"]`).append(
-            `<a class="ui card" href="${ministry.link || "javascript:void(0)"}">
-            <img src="${ministry.image_url}" alt="${
-              ministry.title
-            }" class="ui fluid image"/>
-            <div class="content">
-              <div class="header">${ministry.title}</div>
-              <div class="description">${ministry.description}</div>
-            </div>
-          </a>`
-          );
-        });
-      }
-
-      function generateMinistryVideosPage(
-        page,
-        pageContentContainer,
-        displayedData
-      ) {
-        console.log("=== generateMinistryVideosPage ===");
-
-        pageContentContainer.append(
-          `<div class="ui centered cards" data-title="minitry-videos-page"></div>`
-        );
-
-        displayedData.forEach(({ attributes: ministry }) => {
-          pageContentContainer
-            .find(`div[data-title="minitry-videos-page"]`)
-            .append(
-              `<a class="ui card" href="${
-                ministry.media_url || "javascript:void(0)"
-              }">
-                <img src="${ministry.thumbnail_url}" alt="${
-                ministry.title
-              }" class="ui fluid image"/>
-                <div class="content">
-                  <div class="header">${ministry.title}</div>
-                  <div class="description">${ministry.description}</div>
-                </div>
-              </a>`
-            );
-        });
-      }
-
-      function generatePostsPage(page, pageContentContainer, displayedData) {
-        pageContentContainer.append(`
-          <div>
-            <div class="ui pointing secondary stackable menu">
-              <h2 class="header item">${page.title}</h2>
-              ${
-                page.url == "prayer-letters"
-                  ? `<div class="right item">
-                  <a href="javascript:void(0)" class="ui basic button" role="button"><i aria-hidden="true" class="mail icon"></i>Subscribe to Prayer Letter</a>
-                </div>`
-                  : ""
-              }
-              <div class="right item">
-                <div class="ui icon input">
-                  <input placeholder="Filter ${page.title}..." type="text">
-                  <i aria-hidden="true" class="search icon"></i>
-                </div>
-              </div>
-            </div>
-            <div class="ui centered cards" data-title="posts-page"></div>
-          </div>
-        `);
-
-        displayedData.forEach(({ attributes: post }) => {
-          pageContentContainer.find(`div[data-title="posts-page"]`).append(
-            `<a class="ui card" href="${post.link || "javascript:void(0)"}">
-            <img src="${post.image_url}" alt="${
-              post.title
-            }" class="ui fluid image"/>
-            <div class="content">
-              <div class="header">${post.title}</div>
-              <div class="meta">${post.date}</div>
-            </div>
-          </a>`
-          );
-        });
-      }
-
       function generateAudioVideoPage(
         page,
         pageContentContainer,
         displayedData
       ) {
-        const { page_config } = page;
+        const {
+          page_config,
+          body: [{ __component }],
+        } = page.page.data.attributes;
+
         const hightlightFirstItem = page_config?.hightlightFirstItem || false;
 
         displayedData.forEach(({ attributes }, index) => {
@@ -589,35 +557,268 @@
       ) {
         displayedData.forEach(({ attributes }, index) => {
           pageContentContainer.append(`<section>
-                                  <h2>${attributes.title}</h2>
-                                  <ul class="scripture-list multi-link-${index}"></ul>
-                               </section>`);
+                            <h2>${attributes.title}</h2>
+                            <ul class="scripture-list multi-link-${index}"></ul>
+                         </section>`);
 
           attributes.links?.forEach((link) => {
             $(`.scripture-list.multi-link-${index}`).append(`<li>
-                                      <a href="${link.url}">${link.label}</a>
-                                   </li>`);
+                                <a href="${link.url}">${link.label}</a>
+                             </li>`);
+          });
+        });
+      }
+
+      function generateBlogsPage(page, pageContentContainer, displayedData) {
+        const {
+          attributes: { body: blogMarkdownText, title },
+        } = displayedData;
+
+        const md = window.markdownit();
+        const markdownHtml = md.render(blogMarkdownText);
+        pageContentContainer.append(`
+          <div>
+            <div class="ui text container" data-title="blog-page">
+              ${markdownHtml}
+            </div>
+          </div>
+        `);
+      }
+
+      function generateLanguagesPage(
+        page,
+        pageContentContainer,
+        displayedData
+      ) {
+        const {
+          body: [{ style_type, show_title, show_search_box }],
+          title,
+        } = page.page.data.attributes;
+
+        if (style_type == "page") {
+          pageContentContainer.append(`
+          <div>
+            <div class="ui pointing secondary stackable menu ${
+              !show_title && !show_search_box ? "display-none" : ""
+            }">
+              <h2 class="header item ${
+                !show_title ? "display-none" : ""
+              }">${title}</h2>
+              <div class="right item ${!show_search_box ? "display-none" : ""}">
+                <div class="ui icon input">
+                  <input placeholder="Filter ${title}..." type="text" id="input-search-box">
+                  <i aria-hidden="true" class="search icon"></i>
+                </div>
+              </div>
+            </div>
+            <div class="ui padded three column grid" data-title="languages-page"></div>
+          </div>
+        `);
+          displayedData.forEach(({ attributes: language }) => {
+            pageContentContainer
+              .find(`div[data-title="languages-page"]`)
+              .append(
+                `<li class="column data-search-box"><a href="${
+                  language.url || "javascript:void(0)"
+                }" class="header">${language.label}</a></li>`
+              );
+          });
+
+          //Enable Search Bar
+          enableSearchBar();
+        } else {
+          pageContentContainer.append(`<ul class="language-list"></ul>`);
+          displayedData.forEach(({ attributes: language }, index) => {
+            pageContentContainer
+              .children("ul")
+              .append(
+                `<li><a href="${language.url || "javascript:void(0)"}">${
+                  language.label
+                }</a></li>`
+              );
+          });
+        }
+      }
+
+      function generateMinistriesPage(
+        page,
+        pageContentContainer,
+        displayedData
+      ) {
+        const {
+          body: [{ show_title, show_search_box }],
+          title,
+        } = page.page.data.attributes;
+
+        pageContentContainer.append(`
+          <div>
+            <div class="ui pointing secondary stackable menu ${
+              !show_title && !show_search_box ? "display-none" : ""
+            }">
+              <h2 class="header item ${
+                !show_title ? "display-none" : ""
+              }">${title}</h2>
+              <div class="right item ${!show_search_box ? "display-none" : ""}">
+                <div class="ui icon input">
+                  <input placeholder="Filter ${title}..." type="text" id="input-search-box">
+                  <i aria-hidden="true" class="search icon"></i>
+                </div>
+              </div>
+            </div>
+            <div class="ui centered cards" data-title="minitries-page"></div>
+          </div>
+        `);
+
+        displayedData.forEach(({ attributes: ministry }) => {
+          pageContentContainer.find(`div[data-title="minitries-page"]`).append(
+            `<a class="ui card data-search-box" href="${
+              ministry.link || "javascript:void(0)"
+            }">
+            <img src="${ministry.image_url}" alt="${
+              ministry.title
+            }" class="ui fluid image"/>
+            <div class="content">
+              <div class="header">${ministry.title}</div>
+              <div class="description">${ministry.description}</div>
+            </div>
+          </a>`
+          );
+        });
+
+        //Enable Search Bar
+        enableSearchBar();
+      }
+
+      function generateMinistryVideosPage(
+        page,
+        pageContentContainer,
+        displayedData
+      ) {
+        console.log("=== generateMinistryVideosPage ===");
+
+        pageContentContainer.append(
+          `<div class="ui centered cards" data-title="minitry-videos-page"></div>`
+        );
+
+        displayedData.forEach(({ attributes: ministry }, index) => {
+          pageContentContainer
+            .find(`div[data-title="minitry-videos-page"]`)
+            .append(
+              `<a class="ui card data-search-box" href="${
+                ministry.media_url || "javascript:void(0)"
+              }" id="ministry-video-${index}">
+                <img src="${ministry.thumbnail_url}" alt="${
+                ministry.title
+              }" class="ui fluid image"/>
+
+                <div class="content">
+                  <div class="header" style="font-size: 1em;">${
+                    ministry.title
+                  }</div>
+                  <div class="description" style="line-height: 1.5em;font-size: .7em;">${
+                    ministry.description
+                  }</div>
+                </div>
+              </a>`
+            );
+
+          $(`#ministry-video-${index}`).magnificPopup({
+            type: "iframe",
+            iframe: {
+              patterns: {
+                youtube: {
+                  index: "youtube.com",
+                  id: "v=",
+                  src: ministry.media_url,
+                },
+              },
+              srcAction: "iframe_src",
+            },
+          });
+        });
+      }
+
+      function generatePostsPage(page, pageContentContainer, displayedData) {
+        const {
+          body: [{ show_title, show_search_box }],
+          title,
+        } = page.page.data.attributes;
+
+        pageContentContainer.append(`
+          <div>
+            <div class="ui pointing secondary stackable menu ${
+              !show_title && !show_search_box ? "display-none" : ""
+            }">
+              <h2 class="header item ${
+                !show_title ? "display-none" : ""
+              }">${title}</h2>
+              ${
+                page.url == "prayer-letters"
+                  ? `<div class="right item">
+                  <a href="javascript:void(0)" class="ui basic button" role="button"><i aria-hidden="true" class="mail icon"></i>Subscribe to Prayer Letter</a>
+                </div>`
+                  : ""
+              }
+              <div class="right item ${!show_search_box ? "display-none" : ""}">
+                <div class="ui icon input">
+                  <input placeholder="Filter ${title}..." type="text" id="input-search-box">
+                  <i aria-hidden="true" class="search icon"></i>
+                </div>
+              </div>
+            </div>
+            <div class="ui centered cards" data-title="posts-page"></div>
+          </div>
+        `);
+
+        displayedData.forEach(({ attributes: post }) => {
+          pageContentContainer.find(`div[data-title="posts-page"]`).append(
+            `<a class="ui card data-search-box" href="${
+              post.link || "javascript:void(0)"
+            }">
+            <img src="${post.image_url}" alt="${
+              post.title
+            }" class="ui fluid image"/>
+            <div class="content">
+              <div class="header">${post.title}</div>
+              <div class="meta">${post.date}</div>
+            </div>
+          </a>`
+          );
+        });
+
+        //Enable Search Bar
+        enableSearchBar();
+      }
+
+      function enableSearchBar() {
+        $("#input-search-box").on("keyup", function () {
+          var value = $(this).val().toLowerCase();
+          $(".data-search-box").filter(function () {
+            $(this).toggle(
+              $(this).find(".header").text().toLowerCase().indexOf(value) > -1
+            );
           });
         });
       }
     }
 
-    function generateSiteTabs(site, page, selectPageAction) {
+    function FN_GENERATE_TAB_BAR(site, page, FN_SELECT_PAGE_ACTION) {
       const tabs_bar = getTabsBar(site, page);
       window.JS_SITE_CURRENT_TAB_BAR = tabs_bar;
       console.log("tabs_bar", tabs_bar);
+      const $pageNav = $(".page-nav").empty();
 
       if (!tabs_bar) {
         return;
       }
 
       const {
-        pages: { data: pages },
+        pages,
         style_type,
         backgroud_color,
         font_color,
+        font_hover_color,
       } = tabs_bar;
-      const $pageNav = $(".page-nav").empty();
 
       if (backgroud_color) {
         $pageNav.css("background-color", backgroud_color);
@@ -629,11 +830,20 @@
       let liGenerator;
 
       const aTagGenerator = (page, index) =>
-        `<a ${selectPageAction(
+        `<a ${FN_SELECT_PAGE_ACTION(
           site,
           page,
-          `window.JS_SITE_CURRENT_TAB_BAR.pages.data[${index}].attributes`
-        )} style="color: ${font_color || ""};">${page.title}</a>`;
+          `window.JS_SITE_CURRENT_TAB_BAR.pages[${index}]`,
+          false
+        )} style="color: ${font_color || ""};" 
+        ${
+          font_hover_color &&
+          `onMouseOver="this.style.color='${font_hover_color}'" onMouseOut="this.style.color='${
+            font_color || ""
+          }'"`
+        }>
+        ${page.page.data.attributes.title}
+        </a>`;
 
       if (style_type === "strip_bar") {
         $pageNav.append(
@@ -641,12 +851,12 @@
             <ul class="tabs"></ul>
           </div>`
         );
-        liGenerator = (page, index) =>
+        liGenerator = (pge, index) =>
           $pageNav.find(".container .tabs").append(
-            `<li class="tab-li ${page.title}-tab"
+            `<li class="tab-li ${pge.page.data.attributes.title}-tab"
             style="cursor: pointer;"
-            data-title="${page.title}"
-            >${aTagGenerator(page, index)}</li>`
+            data-title="${pge.page.data.attributes.title}"
+            >${aTagGenerator(pge, index)}</li>`
           );
       } else {
         $pageNav.append(
@@ -657,244 +867,150 @@
         liGenerator = (page, index) =>
           $pageNav.find(".site-nav-heading-bar")
             .append(`<h2 class="header item ${
-            page.title
+            page.page.data.attributes.title
           }-tab" style="cursor: pointer;"
-            data-title="${page.title}">${aTagGenerator(page, index)}</h2>`);
+            data-title="${page.page.data.attributes.title}">${aTagGenerator(
+            page,
+            index
+          )}</h2>`);
       }
-      pages.forEach(({ attributes: page }, index) => liGenerator(page, index));
+      pages.forEach((page, index) => liGenerator(page, index));
 
       function getTabsBar(site, page) {
-        let fromNav;
-        site.nav_bar?.some((navItem) => {
-          const navTabBarData = navItem.tabs_bar.data;
-          if (navItem.page.data?.attributes.title === page.title) {
-            fromNav =
-              navTabBarData?.attributes.pages.data.length &&
-              navTabBarData.attributes;
+        let navTabBarData = window.FN_GET_NAV_ITEM_FOR_PAGE(site, page)
+          ?.tabs_bar.data;
+        return (
+          (navTabBarData?.attributes.pages.length &&
+            navTabBarData.attributes) ||
+          (site.tabs_bar.data?.attributes.pages.length &&
+            site.tabs_bar.data?.attributes)
+        );
+      }
+    }
+
+    function FN_SELECT_PAGE_ACTION(site, leafPage, pageEvalExpr, isNavItem) {
+      const enable_routing =
+        isNavItem || window.JS_SITE_CURRENT_TAB_BAR?.enable_routing;
+
+      let navPage;
+      let leafPageUrl = leafPage.url;
+      if (!isNavItem) {
+        // tab item
+        navPage = window.FN_GET_NAV_ITEM_FOR_PAGE(site, leafPage);
+      } else if (leafPageUrl) {
+        // nav item
+        leafPageUrl = window.FN_JOIN_PATH(
+          leafPageUrl,
+          leafPage.tabs_bar.data?.attributes.pages[0]?.url
+        );
+      }
+
+      let pageUrl = window.FN_JOIN_PATH(
+        window.location.origin,
+        site.base_url,
+        navPage?.url,
+        leafPageUrl
+      );
+
+      let shouldRoute = false;
+      let buttonHref = "javascript:void(0)";
+      let fullUrl = "";
+
+      if (isNavItem && leafPage.external_link) {
+        buttonHref = leafPage.external_link;
+        shouldRoute = false;
+      } else if (leafPageUrl) {
+        shouldRoute = enable_routing;
+        if (enable_routing) {
+          buttonHref = pageUrl;
+        }
+        fullUrl = pageUrl;
+      }
+
+      const buttonOnClick = `FN_SELECT_PAGE(${pageEvalExpr})`;
+      const jsNavigateActions = shouldRoute
+        ? `event.preventDefault(); history.pushState(null, null, '${fullUrl}');`
+        : "";
+      return `onclick="${jsNavigateActions}${buttonOnClick};" href="${buttonHref}"`;
+    }
+
+    function FN_GET_NAV_ITEM_FOR_PAGE(site, pageToMatch) {
+      const { title } = pageToMatch.page.data.attributes;
+      return (
+        site.header.sub_header &&
+        site.nav_bar?.find((navItem) => {
+          const navPage = navItem.page.data?.attributes;
+          const tabs_bar = navItem.tabs_bar.data?.attributes;
+          if (!navPage) {
+            return false;
+          }
+          if (navPage.title === title) {
             return true;
           }
-        });
-        const siteTabBarData = site.tabs_bar.data;
-        return (
-          fromNav ||
-          (siteTabBarData?.attributes.pages.data.length &&
-            siteTabBarData.attributes)
-        );
-      }
-    }
-
-    function generateHeader(site, selectPageAction) {
-      const { header, nav_bar } = site;
-      if (!header?.sub_header) {
-        $(".page-header h1").text(site.title);
-        if (site.sub_title)
-          $(
-            `<div class="ministry-subtitle">${site.sub_title}</div>`
-          ).insertAfter($(".page-header h1"));
-      }
-
-      if (header?.banner_height)
-        $(".page-header").css({ padding: header?.banner_height });
-      if (!header?.banner_url && header?.background_color) {
-        $(".page-header").css({ background: header?.background_color });
-      }
-      if (header?.banner_url) {
-        $(".page-header").css({
-          background: `url(${header?.banner_url}) 50% no-repeat`,
-          "background-size": "cover",
-        });
-      }
-      if (header?.sub_header) {
-        $(".page-header>.container").css({ display: "none" });
-        $(".page-header").append(`
-      <div class="wrapper">
-        <div id="navigation" class="ui container">
-          ${
-            header?.sub_header.logo_url
-              ? `<img src="${header?.sub_header.logo_url}" class="ui image" />`
-              : ``
-          }
-          <h1 class="ui inverted header" ${
-            site.sub_title ? 'style="margin-bottom: 5px;"' : ""
-          }>${site.title}</h1>
-          ${
-            site.sub_title
-              ? `<h4 style="margin: 0px;">${site.sub_title}</h4>`
-              : ``
-          }
-          <div class="ui inverted secondary stackable menu sub-header-navigation"></div>
-        </div>
-      </div>
-      `);
-      }
-
-      if (site.nav_bar) {
-        site.nav_bar.map((nav, index) => {
-          const navAction = nav.external_link
-            ? `href="${nav.external_link}"`
-            : selectPageAction(
-                site,
-                nav.page.data.attributes,
-                `window.JS_SITE_META.nav_bar[${index}].page.data.attributes`,
-                nav
-              );
-          $(".page-header .sub-header-navigation").append(
-            `<div class="item" data-title="${nav.page.data.attributes.title}">
-              <a ${navAction} class="selected">${nav.short_title}</a>
-            </div>`
+          return tabs_bar?.pages.some(
+            (page) => page.page.data.attributes.title === title
           );
-          // <a class="selected" href="${nav.external_link}">${nav.short_title}</a>
-          return nav;
-        });
-      }
-    }
-
-    function generateAside(site) {
-      const { right_side_details } = site;
-      if (!right_side_details) {
-        //hide aside main div
-        $(".page-aside").addClass("display-none");
-
-        $(".page-body").css({ width: "100%" });
-
-        return;
-      }
-
-      //Create carousel
-      createCarousel(right_side_details.carousel_links);
-
-      //Creating Actions buttons
-      let actionIconDefination = {
-        star: "favorite",
-        heart: "donate",
-        cart: "store-link",
-        none: "",
-      };
-      right_side_details?.actions_buttons?.forEach((button, index) => {
-        if (actionIconDefination[button.icon] == "favorite") {
-          $(".ministry-actions").append(`<li class="user-prefs">
-                              <div class="favorite">
-                                  <div class="toggle" style="background: ${button.color};">${button.label}</div>
-                              </div>
-                           </li>`);
-        } else {
-          $(".ministry-actions").append(`<li class="${
-            actionIconDefination[button.icon]
-          }">
-                          <a ${
-                            button.link ? 'href="' + button.link + '"' : ""
-                          } ${
-            button.link ? 'target="_blank"' : ""
-          } onclick="(()=>{console.log('clicked on action button')})()" style="background: ${
-            button.color
-          };">${button.label}</a>
-                       </li>`);
-        }
-      });
-
-      //Creating ministry overview
-      if (
-        right_side_details?.about_title &&
-        right_side_details?.about_description
-      ) {
-        $(".ministry-overview").append(`<div>
-                          <h2 class="desktop-only">${right_side_details?.about_title}</h2>
-                          <p>${right_side_details?.about_description}</p>
-                       </div>`);
-      }
-
-      //Creating ministry links
-      right_side_details?.action_links?.forEach((linkData, index) => {
-        $(".ministry-links").append(`<section class="speaker">
-                          <h2>${linkData.label}</h2>
-                          <p><span><a href="${linkData.link}" target="_blank">${linkData.link_text}</a></span> </p>
-                       </section>`);
-      });
-
-      //Creating ministry social links
-      if (right_side_details?.social_media_title)
-        $(".social_link_title").text(
-          `${right_side_details?.social_media_title}`
-        );
-      right_side_details?.social_links?.forEach((social, index) => {
-        $(".social_links .social_media").append(
-          `<li class="${social.icon}" style="margin: 0 2px;"><a href="${social.link}" target="_blank">${social.icon}</a></li>`
-        );
-      });
-
-      function createCarousel(carousel_links) {
-        carousel_links?.forEach((carousel, index) => {
-          let selector = $(`.carousel > .slides`);
-          if (carousel.type == "image") {
-            selector.append(`<li><img src="${carousel.link}" /></li>`);
-          } else {
-            selector.append(
-              `<li class="video"><a href="${carousel.link}"><span class="play">Play Video</span><img src="${carousel.videoThumbnail}" /></a></li>`
-            );
-          }
-        });
-
-        //Initlize carousel
-        setTimeout(() => {
-          var rf_carousel = new Carousel({
-            player_skin: "/taglib/swf/jwskins/black_plastic/black_plastic.xml",
-            controls_autohide: "none",
-            auto_cycle: "true",
-            container: "carousel",
-          });
-        }, 500);
-      }
-    }
-  }
-
-  function getNavItemForPage(site){
-
-  }
-
-  function getPage(site) {
-    let page;
-    const locationPath = window.location.pathname.slice(1).toLowerCase();
-
-    const findTab = ({ tabs_bar: { data } }, navUrl = "") =>
-      data?.attributes.pages.data.find(
-        ({ attributes: { url } }) =>
-          url &&
-          locationPath ===
-            `${site.base_url.toLowerCase()}/${navUrl}${url.toLowerCase()}`
+        })
       );
-    window.JS_SITE_CURRENT_NAV_ITEM = undefined;
-    site.nav_bar?.some((navItem) => {
-      const navPage = navItem.page.data?.attributes;
-      if (!navPage || !navPage.url) return;
+    }
 
-      page = findTab(navItem, `${navPage.url.toLowerCase()}/`);
+    function FN_JOIN_PATH(...paths) {
+      return paths
+        .filter((p) => p)
+        .join("/")
+        .toLowerCase()
+        .replace(/([^:])\/+/g, "$1/");
+    }
+
+    function getPage(site) {
+      let page;
+      const locationPath = window.location.pathname.slice(1).toLowerCase();
+      const siteUrl = site.base_url;
+
+      const findTab = (item, navUrl = undefined) =>
+        item.tabs_bar.data?.attributes.pages.find(
+          ({ url }) =>
+            locationPath === window.FN_JOIN_PATH(site.base_url, navUrl, url)
+        );
+
+      site.header.sub_header &&
+        site.nav_bar?.some((navItem) => {
+          if (
+            !navItem.page.data ||
+            !locationPath.includes(
+              window.FN_JOIN_PATH(site.base_url, navItem.url)
+            )
+          ) {
+            return false;
+          }
+
+          page = findTab(navItem, navItem.url);
+          if (page) {
+            page = page;
+            return true;
+          }
+          if (
+            locationPath === window.FN_JOIN_PATH(site.base_url, navItem.url)
+          ) {
+            page = navItem;
+            return true;
+          }
+          return false;
+        });
       if (page) {
-        page = page.attributes;
-        window.JS_SITE_CURRENT_NAV_ITEM = navItem;
-        return true;
+        return page;
       }
-      if (
-        locationPath ===
-        `${site.base_url.toLowerCase()}/${navPage.url.toLowerCase()}`
-      ) {
-        page = navPage;
-        return true;
+
+      page = findTab(site);
+      if (page) {
+        page = page;
+        return page;
       }
-      return false;
-    });
-    if (page) {
+
+      page =
+        site.tabs_bar.data?.attributes.pages[0] ||
+        (site.header.sub_header && site.nav_bar?.[0]);
       return page;
     }
-
-    page = findTab(site);
-    if (page) {
-      page = page.attributes;
-      return page;
-    }
-
-    page =
-      site.tabs_bar.data?.attributes.pages.data[0]?.attributes ||
-      site.nav_bar?.[0]?.page.data.attributes;
-    return page;
-  }
+  })();
 </script>
