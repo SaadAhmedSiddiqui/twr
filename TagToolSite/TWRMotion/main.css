@@ -151,3 +151,21 @@ font-family: Montserrat;
   cursor: pointer;
   text-decoration: underline;
 }
+
+.centered.cards[data-title="minitries-page"] .content .header {
+font-family: Montserrat !important;
+font-size: 1em !important;
+}
+
+.centered.cards[data-title="minitries-page"] .content .description {
+  line-height: 1.5em;
+  font-size: .7em;
+}
+
+.ui.secondary.pointing.menu .header.item a {
+  font-family: "montserrat", arial, helvetica, sans-serif;
+}
+
+.page-nav ul li {
+  margin-right: 1.5em !important;
+}
