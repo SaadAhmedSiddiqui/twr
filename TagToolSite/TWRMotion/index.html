@@ -87,75 +87,75 @@
 </div>
 <script>
   setTimeout(function () {
-  const stapiAuthToken =
-    "d832eae68a2ed39d9276cd08926ced621a54f8a15a585fb7823fb151d6c23f753043abeea3b8c66b7ea702325970ef025da8364dd120bad6515d222d898c0233e27bc02bbbc5ffeb6f1794b4df4223d29a5e14687f00894a21b0937937708d267f65c7d9b2b65dc738dfd4ef64e86a06b36114a330c48307a28ea65f0a36461e";
-  const [_, basePath] = window.location.pathname.split("/");
-  const sites_url = `http://localhost:1338/api/sites?filters[base_url][$eq]=${basePath}&populate=deep,10`;
-  let siteData = {};
+    const stapiAuthToken =
+      "788a4ac60001e874dda57f95e96d2fcc6a7ac6e2196c92b56e4fb34adbea1f2e94f13744097b4b09538cd5c58d85f4253c8b73d01cc50a1e79af68beb413a5f75409d4b407b477728fb59b2323061dd8903de78d37e882bf3aff6a17ad1dcd6a3ed4845998b0d19fd29f83a1860fa195a887ba652ae822a9ea772ecd3be2cb01";
+    const [_, basePath] = window.location.pathname.split("/");
+    const sites_url = `https://admin.cms.twr360.net/api/sites?filters[base_url][$eq]=${basePath}&populate=deep,10`;
+    let siteData = {};
 
-  window.FN_SELECT_PAGE = FN_SELECT_PAGE;
-  window.FN_GENERATE_PAGE = FN_GENERATE_PAGE;
-  window.FN_GENERATE_TAB_BAR = FN_GENERATE_TAB_BAR;
-  window.FN_SELECT_PAGE_ACTION = FN_SELECT_PAGE_ACTION;
-  window.FN_GET_NAV_ITEM_FOR_PAGE = FN_GET_NAV_ITEM_FOR_PAGE;
-  window.FN_JOIN_PATH = FN_JOIN_PATH;
+    window.FN_SELECT_PAGE = FN_SELECT_PAGE;
+    window.FN_GENERATE_PAGE = FN_GENERATE_PAGE;
+    window.FN_GENERATE_TAB_BAR = FN_GENERATE_TAB_BAR;
+    window.FN_SELECT_PAGE_ACTION = FN_SELECT_PAGE_ACTION;
+    window.FN_GET_NAV_ITEM_FOR_PAGE = FN_GET_NAV_ITEM_FOR_PAGE;
+    window.FN_JOIN_PATH = FN_JOIN_PATH;
 
-  fetch(sites_url, {
-    headers: { Authorization: `bearer ${stapiAuthToken}` },
-  })
-    .then((response) => response.json())
-    .then((response) => {
-      const site = response?.data[0]?.attributes;
-
-      console.log("sitesData", site);
-      if (site) {
-        const page = getPage(site);
-        generateSite(site, page);
-      }
+    fetch(sites_url, {
+      headers: { Authorization: `bearer ${stapiAuthToken}` },
     })
-    .catch((error) => console.error("Error:", error));
+      .then((response) => response.json())
+      .then((response) => {
+        const site = response?.data[0]?.attributes;
 
-  function generateSite(site, page) {
-    window.JS_SITE_META = site;
+        console.log("sitesData", site);
+        if (site) {
+          const page = getPage(site);
+          generateSite(site, page);
+        }
+      })
+      .catch((error) => console.error("Error:", error));
 
-    $("title").text("TWR360 | " + site.title);
+    function generateSite(site, page) {
+      window.JS_SITE_META = site;
 
-    //Adding header title, subTitle, sub header
-    generateHeader(site, window.FN_SELECT_PAGE_ACTION);
+      $("title").text("TWR360 | " + site.title);
 
-    FN_SELECT_PAGE(page);
+      //Adding header title, subTitle, sub header
+      generateHeader(site, window.FN_SELECT_PAGE_ACTION);
 
-    //====Creating Aside elements======
-    generateAside(site);
+      FN_SELECT_PAGE(page);
 
-    function generateHeader(site, FN_SELECT_PAGE_ACTION) {
-      const { header } = site;
-      if (!header?.sub_header) {
-        $(".page-header h1").text(site.title);
-        if (site.sub_title)
-          $(
-            `<div class="ministry-subtitle">${site.sub_title}</div>`
-          ).insertAfter($(".page-header h1"));
-      }
+      //====Creating Aside elements======
+      generateAside(site);
 
-      if (header?.banner_height)
-        $(".page-header").css({ padding: header?.banner_height });
-      if (!header?.banner && header?.background_color) {
-        $(".page-header").css({ background: header?.background_color });
-      }
-      if (header?.banner) {
-        $(".page-header").css({
-          background: `url(${header?.banner?.data?.attributes?.url}) 50% no-repeat`,
-          "background-size": "cover",
-        });
-      }
-      if (header?.sub_header) {
-        $(".page-header>.container").css({ display: "none" });
-        $(".page-header").append(`
+      function generateHeader(site, FN_SELECT_PAGE_ACTION) {
+        const { header } = site;
+        if (!header?.sub_header) {
+          $(".page-header h1").text(site.title);
+          if (site.sub_title)
+            $(
+              `<div class="ministry-subtitle">${site.sub_title}</div>`
+            ).insertAfter($(".page-header h1"));
+        }
+
+        if (header?.banner_height)
+          $(".page-header").css({ padding: header?.banner_height });
+        if (!header?.banner?.data && header?.background_color) {
+          $(".page-header").css({ background: header?.background_color });
+        }
+        if (header?.banner?.data) {
+          $(".page-header").css({
+            background: `url(${header?.banner?.data?.attributes?.url}) 50% no-repeat`,
+            "background-size": "cover",
+          });
+        }
+        if (header?.sub_header) {
+          $(".page-header>.container").css({ display: "none" });
+          $(".page-header").append(`
       <div class="wrapper">
         <div id="navigation" class="ui container">
           ${
-            header?.sub_header.logo
+            header?.sub_header.logo?.data
               ? `<img src="${header?.sub_header.logo?.data?.attributes?.url}" class="ui image" />`
               : ``
           }
@@ -171,346 +171,354 @@
         </div>
       </div>
       `);
-      }
+        }
 
-      if (site.nav_bar && site.header?.sub_header) {
-        site.nav_bar.map((nav, index) => {
-          const navAction = nav.external_link
-            ? `href="${nav.external_link}"`
-            : FN_SELECT_PAGE_ACTION(
-                site,
-                nav,
-                `window.JS_SITE_META.nav_bar[${index}]`,
-                true
-              );
-          $(".page-header .sub-header-navigation").append(
-            `<div class="item" data-title="${nav.page.data?.attributes.title}">
+        if (site.nav_bar && site.header?.sub_header) {
+          site.nav_bar.map((nav, index) => {
+            const navAction = nav.external_link
+              ? `href="${nav.external_link}"`
+              : FN_SELECT_PAGE_ACTION(
+                  site,
+                  nav,
+                  `window.JS_SITE_META.nav_bar[${index}]`,
+                  true
+                );
+            $(".page-header .sub-header-navigation").append(
+              `<div class="item" data-title="${nav.page.data?.attributes.title}">
               <a ${navAction}>${nav.short_title}</a>
             </div>`
-          );
-          // <a class="selected" href="${nav.external_link}">${nav.short_title}</a>
-          return nav;
-        });
-      }
+            );
+            // <a class="selected" href="${nav.external_link}">${nav.short_title}</a>
+            return nav;
+          });
+        }
 
-      if (site.header?.sub_header?.show_donate_button) {
-        $(".page-header .sub-header-navigation").append(
-          `<div id="donate" class="item">
+        if (site.header?.sub_header?.show_donate_button) {
+          $(".page-header .sub-header-navigation").append(
+            `<div id="donate" class="item">
                 <a href="${site.header?.sub_header?.donate_button_link}" class="ui basic inverted button" role="button">
                   <i aria-hidden="true" class="heart icon"></i>Donate</a>
               </div>`
-        );
-      }
-    }
-
-    function generateAside(site) {
-      const { right_side_details } = site;
-      if (!right_side_details) {
-        //hide aside main div
-        $(".page-aside").addClass("display-none");
-
-        $(".page-body").css({ width: "100%" });
-
-        return;
+          );
+        }
       }
 
-      //Create carousel
-      createCarousel(right_side_details.carousel);
+      function generateAside(site) {
+        const { right_side_details } = site;
+        if (!right_side_details) {
+          //hide aside main div
+          $(".page-aside").addClass("display-none");
 
-      //Creating Actions buttons
-      let actionIconDefination = {
-        star: "favorite",
-        heart: "donate",
-        cart: "store-link",
-        none: "",
-      };
-      right_side_details?.actions_buttons?.forEach((button, index) => {
-        if (actionIconDefination[button.icon] == "favorite") {
-          $(".ministry-actions").append(`<li class="user-prefs">
+          $(".page-body").css({ width: "100%" });
+
+          return;
+        }
+
+        //Create carousel
+        createCarousel(right_side_details.carousel);
+
+        //Creating Actions buttons
+        let actionIconDefination = {
+          star: "favorite",
+          heart: "donate",
+          cart: "store-link",
+          none: "",
+        };
+        right_side_details?.actions_buttons?.forEach((button, index) => {
+          if (actionIconDefination[button.icon] == "favorite") {
+            $(".ministry-actions").append(`<li class="user-prefs">
                               <div class="favorite">
                                   <div class="toggle" style="background: ${button.color};">${button.label}</div>
                               </div>
                            </li>`);
-        } else {
-          $(".ministry-actions").append(`<li class="${
-            actionIconDefination[button.icon]
-          }">
+          } else {
+            $(".ministry-actions").append(`<li class="${
+              actionIconDefination[button.icon]
+            }">
                           <a ${
                             button.link ? 'href="' + button.link + '"' : ""
                           } ${
-            button.link ? 'target="_blank"' : ""
-          } onclick="(()=>{console.log('clicked on action button')})()" style="background: ${
-            button.color
-          };">${button.label}</a>
+              button.link ? 'target="_blank"' : ""
+            } onclick="(()=>{console.log('clicked on action button')})()" style="background: ${
+              button.color
+            };">${button.label}</a>
                        </li>`);
-        }
-      });
-
-      //Creating ministry overview
-      if (
-        right_side_details?.about_title &&
-        right_side_details?.about_description
-      ) {
-        $(".ministry-overview").append(`<div>
-                          <h2 class="desktop-only">${right_side_details?.about_title}</h2>
-                          <p>${right_side_details?.about_description}</p>
-                       </div>`);
-      }
-
-      //Creating ministry links
-      right_side_details?.action_links?.forEach((linkData, index) => {
-        $(".ministry-links").append(`<section class="speaker">
-                          <h2>${linkData.label}</h2>
-                          <p><span><a href="${linkData.link}" target="_blank">${linkData.link_text}</a></span> </p>
-                       </section>`);
-      });
-
-      //Creating ministry social links
-      if (right_side_details?.social_media_title)
-        $(".social_link_title").text(
-          `${right_side_details?.social_media_title}`
-        );
-      right_side_details?.social_links?.forEach((social, index) => {
-        $(".social_links .social_media").append(
-          `<li class="${social.icon}" style="margin: 0 2px;"><a href="${social.link}" target="_blank">${social.icon}</a></li>`
-        );
-      });
-
-      function createCarousel(carousel) {
-        carousel?.forEach((carouselObj, index) => {
-          let selector = $(`.carousel > .slides`);
-          if (carouselObj.type == "image") {
-            selector.append(
-              `<li><img src="${carouselObj.media?.data?.attributes?.url}" /></li>`
-            );
-          } else {
-            selector.append(
-              `<li class="video"><a href="${carouselObj.media?.data?.attributes?.url}"><span class="play">Play Video</span><img src="${carouselObj.videoThumbnail?.data?.attributes?.url}" /></a></li>`
-            );
           }
         });
 
-        //Initlize carousel
-        setTimeout(() => {
-          var rf_carousel = new Carousel({
-            player_skin: "/taglib/swf/jwskins/black_plastic/black_plastic.xml",
-            controls_autohide: "none",
-            auto_cycle: "true",
-            container: "carousel",
-          });
-        }, 500);
-      }
-    }
-  }
-
-  function FN_SELECT_PAGE(page) {
-    console.log("===selectPage==", page);
-
-    window.FN_GENERATE_TAB_BAR(
-      window.JS_SITE_META,
-      page,
-      window.FN_SELECT_PAGE_ACTION
-    );
-    if (!page?.page.data) return;
-
-    window.FN_GENERATE_PAGE(page);
-
-    const { title } = page.page.data?.attributes;
-    $(".tabs .current").removeClass("current");
-    $(`.tabs li[data-title="${title}"]`).addClass("current");
-
-    $(".page-nav .site-nav-heading-bar>h2>a.selected").removeClass("selected");
-    $(`.page-nav .site-nav-heading-bar>h2[data-title="${title}"]`)
-      .find("a")
-      .addClass("selected");
-
-    $(".sub-header-navigation .item>a.selected").removeClass("selected");
-    $(`.sub-header-navigation .item[data-title="${title}"]`)
-      .find("a")
-      .addClass("selected");
-  }
-
-  function FN_GENERATE_PAGE(page) {
-    window.JS_SITE_SELECTED_PAGE = page;
-    const {
-      body: [
-        {
-          __component,
-          content: { data },
-          style_type,
-        },
-      ],
-      title,
-      page_config,
-    } = page.page.data?.attributes;
-    pageContentContainer = $(".page-content-container");
-    pageContentContainer.attr("class", "page-content-container");
-    pageContentContainer.attr("data-title", title);
-
-    let renderer;
-    switch (__component) {
-      case "data-body.audio-feeds":
-        pageContentContainer.addClass(
-          "feed programs recent_programs tab current"
-        );
-        renderer = generateAudioVideoPage;
-        break;
-      case "data-body.video-feeds":
-        pageContentContainer.addClass(
-          "feed programs recent_programs tab current"
-        );
-        renderer = generateAudioVideoPage;
-        break;
-      case "data-body.blog":
-        pageContentContainer.addClass("ui container");
-        renderer = generateBlogsPage;
-        break;
-      case "data-body.languages":
-        pageContentContainer.addClass(
-          style_type == "page" ? "ui container" : "language tab"
-        );
-        renderer = generateLanguagesPage;
-        break;
-      case "data-body.links":
-        pageContentContainer.addClass("feed series tab");
-        renderer = generateLinksPage;
-        break;
-      case "data-body.section-links":
-        pageContentContainer.addClass("scripture tab");
-        renderer = generateSectionLinksPage;
-        break;
-      case "data-body.ministries":
-        pageContentContainer.addClass("ui container");
-        renderer = generateMinistriesPage;
-        break;
-      case "data-body.ministry-videos":
-        pageContentContainer.addClass("ui container");
-        renderer = generateMinistryVideosPage;
-        break;
-      case "data-body.posts":
-        pageContentContainer.addClass("ui container");
-        renderer = generatePostsPage;
-        break;
-      default:
-        console.log("==No Page Found==");
-    }
-
-    const PAGE_SIZE = page_config?.paginationSize || 0;
-    const pageCount = PAGE_SIZE ? Math.ceil(data.length / PAGE_SIZE) : 1;
-    window.JS_SITE_LIST_RENDER_FN = renderer;
-    window.JS_PAGINATOR = {
-      PAGE_SIZE,
-      currentPage: 1,
-      pageCount,
-      selectPaginator,
-    };
-    window.JS_PAGINATOR.selectPaginator(
-      renderer,
-      page,
-      window.JS_PAGINATOR.currentPage
-    );
-
-    function selectPaginator(renderer, page, currentPage) {
-      const pageContentContainer = $(".page-content-container");
-      pageContentContainer.empty();
-
-      this.currentPage = currentPage;
-      const data = page.page.data?.attributes.body[0].content.data;
-      if (!data) {
-        return;
-      }
-
-      const { pageCount } = this;
-      let displayedData = data;
-      if (pageCount <= 1) {
-        page.page.data.attributes.body[0].content.displayedData = displayedData;
-        return renderer(page, pageContentContainer, displayedData);
-      }
-
-      const end = currentPage * this.PAGE_SIZE;
-      const start = end - this.PAGE_SIZE;
-      displayedData = data.slice(start, end);
-      page.page.data.attributes.body[0].content.displayedData = displayedData;
-      renderer(page, pageContentContainer, displayedData);
-
-      const footerStr = `<footer><ol class="pager"></ol></footer>`;
-      const pagerElement = pageContentContainer
-        .last()
-        .append(footerStr)
-        .find("footer > ol.pager");
-
-      if (pageCount === 0) {
-        pagerElement.prop("hidden", "");
-        return;
-      }
-      const prevButton = createClickableButton("&lt;", currentPage - 1);
-      prevButton.setAttribute("className", "previous");
-      const nextButton = createClickableButton("&gt;", currentPage + 1);
-      nextButton.setAttribute("className", "next");
-
-      pagerElement.append(prevButton);
-      Array.from({ length: pageCount }).forEach((_, i) => {
-        const pageNo = i + 1;
-        let pageButton;
-        if (pageNo !== currentPage) {
-          pageButton = createClickableButton(pageNo, pageNo);
-        } else {
-          pageButton = createSelectedButton(pageNo);
+        //Creating ministry overview
+        if (
+          right_side_details?.about_title &&
+          right_side_details?.about_description
+        ) {
+          $(".ministry-overview").append(`<div>
+                          <h2 class="desktop-only">${right_side_details?.about_title}</h2>
+                          <p>${right_side_details?.about_description}</p>
+                       </div>`);
         }
-        pagerElement.append(pageButton);
-      });
-      pagerElement.append(nextButton);
 
-      if (currentPage == 1) {
-        prevButton.style.opacity = 0;
-        prevButton.style.pointerEvents = "none";
-      } else if (currentPage === pageCount) {
-        nextButton.style.opacity = 0;
-        nextButton.style.pointerEvents = "none";
-      }
-      pagerElement.removeProp("hidden");
+        //Creating ministry links
+        right_side_details?.action_links?.forEach((linkData, index) => {
+          $(".ministry-links").append(`<section class="speaker">
+                          <h2>${linkData.label}</h2>
+                          <p><span><a href="${linkData.link}" target="_blank">${linkData.link_text}</a></span> </p>
+                       </section>`);
+        });
 
-      function createClickableButton(content, pageNo) {
-        const liElement = document.createElement("li");
-        const aElement = document.createElement("a");
-        aElement.innerHTML = content;
-        aElement.setAttribute("href", "javascript:void(0)");
-        aElement.setAttribute(
-          "onclick",
-          `JS_PAGINATOR.selectPaginator(window.JS_SITE_LIST_RENDER_FN, window.JS_SITE_SELECTED_PAGE, ${pageNo});`
-        );
+        //Creating ministry social links
+        if (right_side_details?.social_media_title)
+          $(".social_link_title").text(
+            `${right_side_details?.social_media_title}`
+          );
+        right_side_details?.social_links?.forEach((social, index) => {
+          $(".social_links .social_media").append(
+            `<li class="${social.icon}" style="margin: 0 2px;"><a href="${social.link}" target="_blank">${social.icon}</a></li>`
+          );
+        });
 
-        liElement.append(aElement);
-        return liElement;
-      }
-      function createSelectedButton(content) {
-        const liElement = document.createElement("li");
-        const spanElement = document.createElement("span");
-        spanElement.innerHTML = content;
-        liElement.append(spanElement);
-        return liElement;
+        function createCarousel(carousel) {
+          carousel?.forEach((carouselObj, index) => {
+            let selector = $(`.carousel > .slides`);
+            if (carouselObj.type == "image") {
+              selector.append(
+                `<li><img src="${carouselObj.media?.data?.attributes?.url}" /></li>`
+              );
+            } else {
+              selector.append(
+                `<li class="video"><a href="${carouselObj.media?.data?.attributes?.url}"><span class="play">Play Video</span><img src="${carouselObj.videoThumbnail?.data?.attributes?.url}" /></a></li>`
+              );
+            }
+          });
+
+          //Initlize carousel
+          setTimeout(() => {
+            var rf_carousel = new Carousel({
+              player_skin:
+                "/taglib/swf/jwskins/black_plastic/black_plastic.xml",
+              controls_autohide: "none",
+              auto_cycle: "true",
+              container: "carousel",
+            });
+          }, 500);
+        }
       }
     }
 
-    function generateAudioVideoPage(page, pageContentContainer, displayedData) {
+    function FN_SELECT_PAGE(page) {
+      console.log("===selectPage==", page);
+
+      window.FN_GENERATE_TAB_BAR(
+        window.JS_SITE_META,
+        page,
+        window.FN_SELECT_PAGE_ACTION
+      );
+      if (!page?.page.data) return;
+
+      window.FN_GENERATE_PAGE(page);
+
+      const { title } = page.page.data?.attributes;
+      $(".tabs .current").removeClass("current");
+      $(`.tabs li[data-title="${title}"]`).addClass("current");
+
+      $(".page-nav .site-nav-heading-bar>h2>a.selected").removeClass(
+        "selected"
+      );
+      $(`.page-nav .site-nav-heading-bar>h2[data-title="${title}"]`)
+        .find("a")
+        .addClass("selected");
+
+      $(".sub-header-navigation .item>a.selected").removeClass("selected");
+      $(`.sub-header-navigation .item[data-title="${title}"]`)
+        .find("a")
+        .addClass("selected");
+    }
+
+    function FN_GENERATE_PAGE(page) {
+      window.JS_SITE_SELECTED_PAGE = page;
       const {
+        body: [
+          {
+            __component,
+            content: { data },
+            style_type,
+          },
+        ],
+        title,
         page_config,
-        body: [{ __component }],
       } = page.page.data?.attributes;
+      pageContentContainer = $(".page-content-container");
+      pageContentContainer.attr("class", "page-content-container");
+      pageContentContainer.attr("data-title", title);
 
-      const hightlightFirstItem = page_config?.hightlightFirstItem || false;
+      let renderer;
+      switch (__component) {
+        case "data-body.audio-feeds":
+          pageContentContainer.addClass(
+            "feed programs recent_programs tab current"
+          );
+          renderer = generateAudioVideoPage;
+          break;
+        case "data-body.video-feeds":
+          pageContentContainer.addClass(
+            "feed programs recent_programs tab current"
+          );
+          renderer = generateAudioVideoPage;
+          break;
+        case "data-body.blog":
+          pageContentContainer.addClass("ui container");
+          renderer = generateBlogsPage;
+          break;
+        case "data-body.languages":
+          pageContentContainer.addClass(
+            style_type == "page" ? "ui container" : "language tab"
+          );
+          renderer = generateLanguagesPage;
+          break;
+        case "data-body.links":
+          pageContentContainer.addClass("feed series tab");
+          renderer = generateLinksPage;
+          break;
+        case "data-body.section-links":
+          pageContentContainer.addClass("scripture tab");
+          renderer = generateSectionLinksPage;
+          break;
+        case "data-body.ministries":
+          pageContentContainer.addClass("ui container");
+          renderer = generateMinistriesPage;
+          break;
+        case "data-body.ministry-videos":
+          pageContentContainer.addClass("ui container");
+          renderer = generateMinistryVideosPage;
+          break;
+        case "data-body.posts":
+          pageContentContainer.addClass("ui container");
+          renderer = generatePostsPage;
+          break;
+        default:
+          console.log("==No Page Found==");
+      }
 
-      displayedData.forEach(({ attributes }, index) => {
-        let feed = attributes;
-        pageContentContainer.append(`<section class="${
-          hightlightFirstItem && index === 0 ? "latest_program" : ""
-        }">
+      const PAGE_SIZE = page_config?.paginationSize || 0;
+      const pageCount = PAGE_SIZE ? Math.ceil(data.length / PAGE_SIZE) : 1;
+      window.JS_SITE_LIST_RENDER_FN = renderer;
+      window.JS_PAGINATOR = {
+        PAGE_SIZE,
+        currentPage: 1,
+        pageCount,
+        selectPaginator,
+      };
+      window.JS_PAGINATOR.selectPaginator(
+        renderer,
+        page,
+        window.JS_PAGINATOR.currentPage
+      );
+
+      function selectPaginator(renderer, page, currentPage) {
+        const pageContentContainer = $(".page-content-container");
+        pageContentContainer.empty();
+
+        this.currentPage = currentPage;
+        const data = page.page.data?.attributes.body[0].content.data;
+        if (!data) {
+          return;
+        }
+
+        const { pageCount } = this;
+        let displayedData = data;
+        if (pageCount <= 1) {
+          page.page.data.attributes.body[0].content.displayedData =
+            displayedData;
+          return renderer(page, pageContentContainer, displayedData);
+        }
+
+        const end = currentPage * this.PAGE_SIZE;
+        const start = end - this.PAGE_SIZE;
+        displayedData = data.slice(start, end);
+        page.page.data.attributes.body[0].content.displayedData = displayedData;
+        renderer(page, pageContentContainer, displayedData);
+
+        const footerStr = `<footer><ol class="pager"></ol></footer>`;
+        const pagerElement = pageContentContainer
+          .last()
+          .append(footerStr)
+          .find("footer > ol.pager");
+
+        if (pageCount === 0) {
+          pagerElement.prop("hidden", "");
+          return;
+        }
+        const prevButton = createClickableButton("&lt;", currentPage - 1);
+        prevButton.setAttribute("className", "previous");
+        const nextButton = createClickableButton("&gt;", currentPage + 1);
+        nextButton.setAttribute("className", "next");
+
+        pagerElement.append(prevButton);
+        Array.from({ length: pageCount }).forEach((_, i) => {
+          const pageNo = i + 1;
+          let pageButton;
+          if (pageNo !== currentPage) {
+            pageButton = createClickableButton(pageNo, pageNo);
+          } else {
+            pageButton = createSelectedButton(pageNo);
+          }
+          pagerElement.append(pageButton);
+        });
+        pagerElement.append(nextButton);
+
+        if (currentPage == 1) {
+          prevButton.style.opacity = 0;
+          prevButton.style.pointerEvents = "none";
+        } else if (currentPage === pageCount) {
+          nextButton.style.opacity = 0;
+          nextButton.style.pointerEvents = "none";
+        }
+        pagerElement.removeProp("hidden");
+
+        function createClickableButton(content, pageNo) {
+          const liElement = document.createElement("li");
+          const aElement = document.createElement("a");
+          aElement.innerHTML = content;
+          aElement.setAttribute("href", "javascript:void(0)");
+          aElement.setAttribute(
+            "onclick",
+            `JS_PAGINATOR.selectPaginator(window.JS_SITE_LIST_RENDER_FN, window.JS_SITE_SELECTED_PAGE, ${pageNo});`
+          );
+
+          liElement.append(aElement);
+          return liElement;
+        }
+        function createSelectedButton(content) {
+          const liElement = document.createElement("li");
+          const spanElement = document.createElement("span");
+          spanElement.innerHTML = content;
+          liElement.append(spanElement);
+          return liElement;
+        }
+      }
+
+      function generateAudioVideoPage(
+        page,
+        pageContentContainer,
+        displayedData
+      ) {
+        const {
+          page_config,
+          body: [{ __component }],
+        } = page.page.data?.attributes;
+
+        const hightlightFirstItem = page_config?.hightlightFirstItem || false;
+
+        displayedData.forEach(({ attributes }, index) => {
+          let feed = attributes;
+          pageContentContainer.append(`<section class="${
+            hightlightFirstItem && index === 0 ? "latest_program" : ""
+          }">
                           <header>
                               <h1><a href="#">${feed.title}</a></h1>
                               <time datetime="" pubdate="">${feed.date}</time>
                               <ul class="references references-feed-${index}  ${
-          !feed.references?.length ? "display-none" : ""
-        }">
+            !feed.references?.length ? "display-none" : ""
+          }">
                               </ul>
                           </header>
                           <p class="description">${feed.description}</p>
@@ -524,80 +532,84 @@
                           }
                        </section>`);
 
-        if (__component.indexOf("video") !== -1) {
-          $(`#video-${index}`).magnificPopup({
-            type: "iframe",
-            iframe: {
-              patterns: {
-                youtube: {
-                  index: "youtube.com",
-                  id: "v=",
-                  src: feed.media_url,
+          if (__component.indexOf("video") !== -1) {
+            $(`#video-${index}`).magnificPopup({
+              type: "iframe",
+              iframe: {
+                patterns: {
+                  youtube: {
+                    index: "youtube.com",
+                    id: "v=",
+                    src: feed.media_url,
+                  },
                 },
+                srcAction: "iframe_src",
               },
-              srcAction: "iframe_src",
-            },
-          });
-        } else {
-          $(`#audio-${index}`).click(function () {
-            //$("audio").each((index, elem) => elem.pause());
-            this.paused ? this.play() : this.pause();
-          });
-        }
-      });
-    }
+            });
+          } else {
+            $(`#audio-${index}`).click(function () {
+              //$("audio").each((index, elem) => elem.pause());
+              this.paused ? this.play() : this.pause();
+            });
+          }
+        });
+      }
 
-    function generateLinksPage(page, pageContentContainer, displayedData) {
-      displayedData.forEach(({ attributes }, index) => {
-        pageContentContainer.append(
-          `<section> <a href="${attributes.url}">${attributes.label}</a></section>`
-        );
-      });
-    }
+      function generateLinksPage(page, pageContentContainer, displayedData) {
+        displayedData.forEach(({ attributes }, index) => {
+          pageContentContainer.append(
+            `<section> <a href="${attributes.url}">${attributes.label}</a></section>`
+          );
+        });
+      }
 
-    function generateSectionLinksPage(
-      page,
-      pageContentContainer,
-      displayedData
-    ) {
-      displayedData.forEach(({ attributes }, index) => {
-        pageContentContainer.append(`<section>
+      function generateSectionLinksPage(
+        page,
+        pageContentContainer,
+        displayedData
+      ) {
+        displayedData.forEach(({ attributes }, index) => {
+          pageContentContainer.append(`<section>
                             <h2>${attributes.title}</h2>
                             <ul class="scripture-list multi-link-${index}"></ul>
                          </section>`);
 
-        attributes.links?.forEach((link) => {
-          $(`.scripture-list.multi-link-${index}`).append(`<li>
+          attributes.links?.forEach((link) => {
+            $(`.scripture-list.multi-link-${index}`).append(`<li>
                                 <a href="${link.url}">${link.label}</a>
                              </li>`);
+          });
         });
-      });
-    }
+      }
 
-    function generateBlogsPage(page, pageContentContainer, displayedData) {
-      const {
-        attributes: { body: blogMarkdownText, title },
-      } = displayedData;
+      function generateBlogsPage(page, pageContentContainer, displayedData) {
+        const {
+          attributes: { body: blogMarkdownText, title },
+        } = displayedData;
 
-      const md = window.markdownit();
-      const markdownHtml = md.render(blogMarkdownText);
-      pageContentContainer.append(`
+        const md = window.markdownit();
+        const markdownHtml = md.render(blogMarkdownText);
+        pageContentContainer.append(`
           <div>
             <div class="ui text container" data-title="blog-page">
               ${markdownHtml}
             </div>
           </div>
         `);
-    }
+      }
 
-    function generateLanguagesPage(page, pageContentContainer, displayedData) {
-      const {
-        body: [{ style_type, show_title, show_search_box }],
-        title,
-      } = page.page.data?.attributes;
+      function generateLanguagesPage(
+        page,
+        pageContentContainer,
+        displayedData
+      ) {
+        const {
+          body: [{ style_type, show_title, show_search_box }],
+          title,
+        } = page.page.data?.attributes;
 
-      if (style_type == "page") {
-        pageContentContainer.append(`
+        if (style_type == "page") {
+          pageContentContainer.append(`
           <div>
             <div class="ui pointing secondary stackable menu ${
               !show_title && !show_search_box ? "display-none" : ""
@@ -615,39 +627,43 @@
             <div class="ui padded three column grid" data-title="languages-page"></div>
           </div>
         `);
-        displayedData.forEach(({ attributes: language }) => {
-          pageContentContainer
-            .find(`div[data-title="languages-page"]`)
-            .append(
-              `<li class="column data-search-box"><a href="${
-                language.url || "javascript:void(0)"
-              }" class="header">${language.label}</a></li>`
-            );
-        });
+          displayedData.forEach(({ attributes: language }) => {
+            pageContentContainer
+              .find(`div[data-title="languages-page"]`)
+              .append(
+                `<li class="column data-search-box"><a href="${
+                  language.url || "javascript:void(0)"
+                }" class="header">${language.label}</a></li>`
+              );
+          });
 
-        //Enable Search Bar
-        enableSearchBar();
-      } else {
-        pageContentContainer.append(`<ul class="language-list"></ul>`);
-        displayedData.forEach(({ attributes: language }, index) => {
-          pageContentContainer
-            .children("ul")
-            .append(
-              `<li><a href="${language.url || "javascript:void(0)"}">${
-                language.label
-              }</a></li>`
-            );
-        });
+          //Enable Search Bar
+          enableSearchBar();
+        } else {
+          pageContentContainer.append(`<ul class="language-list"></ul>`);
+          displayedData.forEach(({ attributes: language }, index) => {
+            pageContentContainer
+              .children("ul")
+              .append(
+                `<li><a href="${language.url || "javascript:void(0)"}">${
+                  language.label
+                }</a></li>`
+              );
+          });
+        }
       }
-    }
 
-    function generateMinistriesPage(page, pageContentContainer, displayedData) {
-      const {
-        body: [{ show_title, show_search_box }],
-        title,
-      } = page.page.data?.attributes;
+      function generateMinistriesPage(
+        page,
+        pageContentContainer,
+        displayedData
+      ) {
+        const {
+          body: [{ show_title, show_search_box }],
+          title,
+        } = page.page.data?.attributes;
 
-      pageContentContainer.append(`
+        pageContentContainer.append(`
           <div>
             <div class="ui pointing secondary stackable menu ${
               !show_title && !show_search_box ? "display-none" : ""
@@ -666,47 +682,47 @@
           </div>
         `);
 
-      displayedData.forEach(({ attributes: ministry }) => {
-        pageContentContainer.find(`div[data-title="minitries-page"]`).append(
-          `<a class="ui card data-search-box" href="${
-            ministry.link || "javascript:void(0)"
-          }">
+        displayedData.forEach(({ attributes: ministry }) => {
+          pageContentContainer.find(`div[data-title="minitries-page"]`).append(
+            `<a class="ui card data-search-box" href="${
+              ministry.link || "javascript:void(0)"
+            }">
             <img src="${ministry.image_url}" alt="${
-            ministry.title
-          }" class="ui fluid image"/>
+              ministry.title
+            }" class="ui fluid image"/>
             <div class="content">
               <div class="header">${ministry.title}</div>
               <div class="description">${ministry.description}</div>
             </div>
           </a>`
+          );
+        });
+
+        //Enable Search Bar
+        enableSearchBar();
+      }
+
+      function generateMinistryVideosPage(
+        page,
+        pageContentContainer,
+        displayedData
+      ) {
+        console.log("=== generateMinistryVideosPage ===");
+
+        pageContentContainer.append(
+          `<div class="ui centered cards" data-title="minitry-videos-page"></div>`
         );
-      });
 
-      //Enable Search Bar
-      enableSearchBar();
-    }
-
-    function generateMinistryVideosPage(
-      page,
-      pageContentContainer,
-      displayedData
-    ) {
-      console.log("=== generateMinistryVideosPage ===");
-
-      pageContentContainer.append(
-        `<div class="ui centered cards" data-title="minitry-videos-page"></div>`
-      );
-
-      displayedData.forEach(({ attributes: ministry }, index) => {
-        pageContentContainer
-          .find(`div[data-title="minitry-videos-page"]`)
-          .append(
-            `<a class="ui card data-search-box" href="${
-              ministry.media_url || "javascript:void(0)"
-            }" id="ministry-video-${index}">
+        displayedData.forEach(({ attributes: ministry }, index) => {
+          pageContentContainer
+            .find(`div[data-title="minitry-videos-page"]`)
+            .append(
+              `<a class="ui card data-search-box" href="${
+                ministry.media_url || "javascript:void(0)"
+              }" id="ministry-video-${index}">
                 <img src="${ministry.thumbnail_url}" alt="${
-              ministry.title
-            }" class="ui fluid image"/>
+                ministry.title
+              }" class="ui fluid image"/>
 
                 <div class="content">
                   <div class="header" style="font-size: 1em;">${
@@ -717,31 +733,31 @@
                   }</div>
                 </div>
               </a>`
-          );
+            );
 
-        $(`#ministry-video-${index}`).magnificPopup({
-          type: "iframe",
-          iframe: {
-            patterns: {
-              youtube: {
-                index: "youtube.com",
-                id: "v=",
-                src: ministry.media_url,
+          $(`#ministry-video-${index}`).magnificPopup({
+            type: "iframe",
+            iframe: {
+              patterns: {
+                youtube: {
+                  index: "youtube.com",
+                  id: "v=",
+                  src: ministry.media_url,
+                },
               },
+              srcAction: "iframe_src",
             },
-            srcAction: "iframe_src",
-          },
+          });
         });
-      });
-    }
+      }
 
-    function generatePostsPage(page, pageContentContainer, displayedData) {
-      const {
-        body: [{ show_title, show_search_box }],
-        title,
-      } = page.page.data?.attributes;
+      function generatePostsPage(page, pageContentContainer, displayedData) {
+        const {
+          body: [{ show_title, show_search_box }],
+          title,
+        } = page.page.data?.attributes;
 
-      pageContentContainer.append(`
+        pageContentContainer.append(`
           <div>
             <div class="ui pointing secondary stackable menu ${
               !show_title && !show_search_box ? "display-none" : ""
@@ -767,67 +783,72 @@
           </div>
         `);
 
-      displayedData.forEach(({ attributes: post }) => {
-        pageContentContainer.find(`div[data-title="posts-page"]`).append(
-          `<a class="ui card data-search-box" href="${
-            post.link || "javascript:void(0)"
-          }">
+        displayedData.forEach(({ attributes: post }) => {
+          pageContentContainer.find(`div[data-title="posts-page"]`).append(
+            `<a class="ui card data-search-box" href="${
+              post.link || "javascript:void(0)"
+            }">
             <img src="${post.image_url}" alt="${
-            post.title
-          }" class="ui fluid image"/>
+              post.title
+            }" class="ui fluid image"/>
             <div class="content">
               <div class="header">${post.title}</div>
               <div class="meta">${post.date}</div>
             </div>
           </a>`
-        );
-      });
-
-      //Enable Search Bar
-      enableSearchBar();
-    }
-
-    function enableSearchBar() {
-      $("#input-search-box").on("keyup", function () {
-        var value = $(this).val().toLowerCase();
-        $(".data-search-box").filter(function () {
-          $(this).toggle(
-            $(this).find(".header").text().toLowerCase().indexOf(value) > -1
           );
         });
-      });
-    }
-  }
 
-  function FN_GENERATE_TAB_BAR(site, page, FN_SELECT_PAGE_ACTION) {
-    const tabs_bar = getTabsBar(site, page);
-    window.JS_SITE_CURRENT_TAB_BAR = tabs_bar;
-    console.log("tabs_bar", tabs_bar);
-    const $pageNav = $(".page-nav").empty();
+        //Enable Search Bar
+        enableSearchBar();
+      }
 
-    if (!tabs_bar) {
-      return;
-    }
-
-    const { pages, style_type, backgroud_color, font_color, font_hover_color } =
-      tabs_bar;
-
-    if (backgroud_color) {
-      $pageNav.css("background-color", backgroud_color);
-    }
-    if (font_color) {
-      $pageNav.css("color", font_color);
+      function enableSearchBar() {
+        $("#input-search-box").on("keyup", function () {
+          var value = $(this).val().toLowerCase();
+          $(".data-search-box").filter(function () {
+            $(this).toggle(
+              $(this).find(".header").text().toLowerCase().indexOf(value) > -1
+            );
+          });
+        });
+      }
     }
 
-    let liGenerator;
+    function FN_GENERATE_TAB_BAR(site, page, FN_SELECT_PAGE_ACTION) {
+      const tabs_bar = getTabsBar(site, page);
+      window.JS_SITE_CURRENT_TAB_BAR = tabs_bar;
+      console.log("tabs_bar", tabs_bar);
+      const $pageNav = $(".page-nav").empty();
 
-    const aTagGenerator = (page, index) =>
-      `<a ${FN_SELECT_PAGE_ACTION(
-        site,
-        page,
-        `window.JS_SITE_CURRENT_TAB_BAR.pages[${index}]`,
-        false
-      )} style="color: ${font_color || ""};" 
+      if (!tabs_bar) {
+        return;
+      }
+
+      const {
+        pages,
+        style_type,
+        backgroud_color,
+        font_color,
+        font_hover_color,
+      } = tabs_bar;
+
+      if (backgroud_color) {
+        $pageNav.css("background-color", backgroud_color);
+      }
+      if (font_color) {
+        $pageNav.css("color", font_color);
+      }
+
+      let liGenerator;
+
+      const aTagGenerator = (page, index) =>
+        `<a ${FN_SELECT_PAGE_ACTION(
+          site,
+          page,
+          `window.JS_SITE_CURRENT_TAB_BAR.pages[${index}]`,
+          false
+        )} style="color: ${font_color || ""};" 
         ${
           font_hover_color &&
           `onMouseOver="this.style.color='${font_hover_color}'" onMouseOut="this.style.color='${
@@ -837,169 +858,172 @@
         ${page.page.data?.attributes.title}
         </a>`;
 
-    if (style_type === "strip_bar") {
-      $pageNav.append(
-        `<div class="container tabbed">
+      if (style_type === "strip_bar") {
+        $pageNav.append(
+          `<div class="container tabbed">
             <ul class="tabs"></ul>
           </div>`
-      );
-      liGenerator = (pge, index) =>
-        $pageNav.find(".container .tabs").append(
-          `<li class="tab-li ${pge.page.data?.attributes.title}-tab"
+        );
+        liGenerator = (pge, index) =>
+          $pageNav.find(".container .tabs").append(
+            `<li class="tab-li ${pge.page.data?.attributes.title}-tab"
             style="cursor: pointer;"
             data-title="${pge.page.data?.attributes.title}"
             >${aTagGenerator(pge, index)}</li>`
-        );
-    } else {
-      $pageNav.append(
-        `<div class="ui container">
+          );
+      } else {
+        $pageNav.append(
+          `<div class="ui container">
             <div class="ui pointing secondary stackable menu site-nav-heading-bar"></div>
           </div>`
-      );
-      liGenerator = (page, index) =>
-        $pageNav.find(".site-nav-heading-bar").append(`<h2 class="header item ${
-          page.page.data?.attributes.title
-        }-tab" style="cursor: pointer;"
-            data-title="${page.page.data?.attributes.title}">${aTagGenerator(
-          page,
-          index
-        )}</h2>`);
-    }
-    pages.forEach((page, index) => liGenerator(page, index));
-
-    function getTabsBar(site, page) {
-      let navTabBarData = window.FN_GET_NAV_ITEM_FOR_PAGE(site, page)?.tabs_bar
-        .data;
-      return (
-        (navTabBarData?.attributes.pages.length && navTabBarData.attributes) ||
-        (site.tabs_bar.data?.attributes.pages.length &&
-          site.tabs_bar.data?.attributes)
-      );
-    }
-  }
-
-  function FN_SELECT_PAGE_ACTION(site, leafPage, pageEvalExpr, isNavItem) {
-    const enable_routing =
-      isNavItem || window.JS_SITE_CURRENT_TAB_BAR?.enable_routing;
-
-    let navPage;
-    let leafPageUrl = leafPage.url;
-    if (!isNavItem) {
-      // tab item
-      navPage = window.FN_GET_NAV_ITEM_FOR_PAGE(site, leafPage);
-    } else if (leafPageUrl) {
-      // nav item
-      leafPageUrl = window.FN_JOIN_PATH(
-        leafPageUrl,
-        leafPage.tabs_bar.data?.attributes.pages[0]?.url
-      );
-    }
-
-    let pageUrl = window.FN_JOIN_PATH(
-      window.location.origin,
-      site.base_url,
-      navPage?.url,
-      leafPageUrl
-    );
-
-    let shouldRoute = false;
-    let buttonHref = "javascript:void(0)";
-    let fullUrl = "";
-
-    if (isNavItem && leafPage.external_link) {
-      buttonHref = leafPage.external_link;
-      shouldRoute = false;
-    } else if (leafPageUrl) {
-      shouldRoute = enable_routing;
-      if (enable_routing) {
-        buttonHref = pageUrl;
-      }
-      fullUrl = pageUrl;
-    }
-
-    const buttonOnClick = `FN_SELECT_PAGE(${pageEvalExpr})`;
-    const jsNavigateActions = shouldRoute
-      ? `event.preventDefault(); history.pushState(null, null, '${fullUrl}');`
-      : "";
-    return `onclick="${jsNavigateActions}${buttonOnClick};" href="${buttonHref}"`;
-  }
-
-  function FN_GET_NAV_ITEM_FOR_PAGE(site, pageToMatch) {
-    const title = pageToMatch?.page.data?.attributes.title;
-    return (
-      site.header?.sub_header &&
-      site.nav_bar?.find((navItem) => {
-        const navPage = navItem.page.data?.attributes;
-        const tabs_bar = navItem.tabs_bar.data?.attributes;
-        if (!navPage) {
-          return false;
-        }
-        if (navPage.title === title) {
-          return true;
-        }
-        return tabs_bar?.pages.some(
-          (page) => page.page.data?.attributes.title === title
         );
-      })
-    );
-  }
+        liGenerator = (page, index) =>
+          $pageNav.find(".site-nav-heading-bar")
+            .append(`<h2 class="header item ${
+            page.page.data?.attributes.title
+          }-tab" style="cursor: pointer;"
+            data-title="${page.page.data?.attributes.title}">${aTagGenerator(
+            page,
+            index
+          )}</h2>`);
+      }
+      pages.forEach((page, index) => liGenerator(page, index));
 
-  function FN_JOIN_PATH(...paths) {
-    return paths
-      .filter((p) => p)
-      .join("/")
-      .toLowerCase()
-      .replace(new RegExp("([^:])/+", "g"), "$1/");
-  }
+      function getTabsBar(site, page) {
+        let navTabBarData = window.FN_GET_NAV_ITEM_FOR_PAGE(site, page)
+          ?.tabs_bar.data;
+        return (
+          (navTabBarData?.attributes.pages.length &&
+            navTabBarData.attributes) ||
+          (site.tabs_bar.data?.attributes.pages.length &&
+            site.tabs_bar.data?.attributes)
+        );
+      }
+    }
 
-  function getPage(site) {
-    let page;
-    const locationPath = window.location.pathname.slice(1).toLowerCase();
-    const siteUrl = site.base_url;
+    function FN_SELECT_PAGE_ACTION(site, leafPage, pageEvalExpr, isNavItem) {
+      const enable_routing =
+        isNavItem || window.JS_SITE_CURRENT_TAB_BAR?.enable_routing;
 
-    const findTab = (item, navUrl = undefined) =>
-      item.tabs_bar.data?.attributes.pages.find(
-        ({ url }) =>
-          locationPath === window.FN_JOIN_PATH(site.base_url, navUrl, url)
+      let navPage;
+      let leafPageUrl = leafPage.url;
+      if (!isNavItem) {
+        // tab item
+        navPage = window.FN_GET_NAV_ITEM_FOR_PAGE(site, leafPage);
+      } else if (leafPageUrl) {
+        // nav item
+        leafPageUrl = window.FN_JOIN_PATH(
+          leafPageUrl,
+          leafPage.tabs_bar.data?.attributes.pages[0]?.url
+        );
+      }
+
+      let pageUrl = window.FN_JOIN_PATH(
+        window.location.origin,
+        site.base_url,
+        navPage?.url,
+        leafPageUrl
       );
 
-    site.header?.sub_header &&
-      site.nav_bar?.some((navItem) => {
-        if (
-          !navItem.page.data ||
-          !locationPath.includes(
-            window.FN_JOIN_PATH(site.base_url, navItem.url)
-          )
-        ) {
+      let shouldRoute = false;
+      let buttonHref = "javascript:void(0)";
+      let fullUrl = "";
+
+      if (isNavItem && leafPage.external_link) {
+        buttonHref = leafPage.external_link;
+        shouldRoute = false;
+      } else if (leafPageUrl) {
+        shouldRoute = enable_routing;
+        if (enable_routing) {
+          buttonHref = pageUrl;
+        }
+        fullUrl = pageUrl;
+      }
+
+      const buttonOnClick = `FN_SELECT_PAGE(${pageEvalExpr})`;
+      const jsNavigateActions = shouldRoute
+        ? `event.preventDefault(); history.pushState(null, null, '${fullUrl}');`
+        : "";
+      return `onclick="${jsNavigateActions}${buttonOnClick};" href="${buttonHref}"`;
+    }
+
+    function FN_GET_NAV_ITEM_FOR_PAGE(site, pageToMatch) {
+      const title = pageToMatch?.page.data?.attributes.title;
+      return (
+        site.header?.sub_header &&
+        site.nav_bar?.find((navItem) => {
+          const navPage = navItem.page.data?.attributes;
+          const tabs_bar = navItem.tabs_bar.data?.attributes;
+          if (!navPage) {
+            return false;
+          }
+          if (navPage.title === title) {
+            return true;
+          }
+          return tabs_bar?.pages.some(
+            (page) => page.page.data?.attributes.title === title
+          );
+        })
+      );
+    }
+
+    function FN_JOIN_PATH(...paths) {
+      return paths
+        .filter((p) => p)
+        .join("/")
+        .toLowerCase()
+        .replace(new RegExp("([^:])/+", "g"), "$1/");
+    }
+
+    function getPage(site) {
+      let page;
+      const locationPath = window.location.pathname.slice(1).toLowerCase();
+      const siteUrl = site.base_url;
+
+      const findTab = (item, navUrl = undefined) =>
+        item.tabs_bar.data?.attributes.pages.find(
+          ({ url }) =>
+            locationPath === window.FN_JOIN_PATH(site.base_url, navUrl, url)
+        );
+
+      site.header?.sub_header &&
+        site.nav_bar?.some((navItem) => {
+          if (
+            !navItem.page.data ||
+            !locationPath.includes(
+              window.FN_JOIN_PATH(site.base_url, navItem.url)
+            )
+          ) {
+            return false;
+          }
+
+          page = findTab(navItem, navItem.url);
+          if (page) {
+            page = page;
+            return true;
+          }
+          if (
+            locationPath === window.FN_JOIN_PATH(site.base_url, navItem.url)
+          ) {
+            page = navItem;
+            return true;
+          }
           return false;
-        }
+        });
+      if (page) {
+        return page;
+      }
 
-        page = findTab(navItem, navItem.url);
-        if (page) {
-          page = page;
-          return true;
-        }
-        if (locationPath === window.FN_JOIN_PATH(site.base_url, navItem.url)) {
-          page = navItem;
-          return true;
-        }
-        return false;
-      });
-    if (page) {
+      page = findTab(site);
+      if (page) {
+        page = page;
+        return page;
+      }
+
+      page =
+        site.tabs_bar.data?.attributes.pages[0] ||
+        (site.header?.sub_header && site.nav_bar?.[0]);
       return page;
     }
-
-    page = findTab(site);
-    if (page) {
-      page = page;
-      return page;
-    }
-
-    page =
-      site.tabs_bar.data?.attributes.pages[0] ||
-      (site.header?.sub_header && site.nav_bar?.[0]);
-    return page;
-  }
-}, 0);
-
+  }, 0);
 </script>

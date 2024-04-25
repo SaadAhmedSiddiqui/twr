@@ -1,6 +1,21 @@
 html {
   background-color: #fff !important;
 }
+iframe {
+  width: -moz-available;
+  width: -webkit-fill-available;
+}
+
+/* On screens that are 768px or less */
+@media screen and (max-width: 829px) {
+.site-body .page-header {
+  padding: 40px !important;
+}
+.ui.container .image{
+  width: auto !important;
+}
+}
+
 .page-header + .page-body{
   padding: 0;
 }
