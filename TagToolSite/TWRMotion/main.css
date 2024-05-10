@@ -8,15 +8,15 @@ iframe {
 
 /* On screens that are 768px or less */
 @media screen and (max-width: 829px) {
-.site-body .page-header {
-  padding: 40px !important;
-}
-.ui.container .image{
-  width: auto !important;
-}
+  .site-body .page-header {
+    padding: 40px !important;
+  }
+  .ui.container .image {
+    width: auto !important;
+  }
 }
 
-.page-header + .page-body{
+.page-header + .page-body {
   padding: 0;
 }
 .page-body > .container {
@@ -34,14 +34,13 @@ iframe {
   padding-right: 0px !important;
 }
 
-.page-content-container .header.item{
+.page-content-container .header.item {
   font-family: Montserrat;
 }
 
-.main-app-container{
+.main-app-container {
   width: 100%;
 }
-
 
 body {
   overflow-x: hidden !important;
@@ -63,60 +62,60 @@ li a {
 }
 
 #header {
-background-size: cover;
-padding: 0;
-border-radius: 0;
-margin-bottom: 3em;
+  background-size: cover;
+  padding: 0;
+  border-radius: 0;
+  margin-bottom: 3em;
 }
 #navigation {
-background: rgba(156, 0, 4, 0.5);
-padding: 2em;
+  background: rgba(156, 0, 4, 0.5);
+  padding: 2em;
 }
-#navigation h4{
+#navigation h4 {
   font-family: Montserrat;
 }
 .ui.menu .item .selected {
-border-bottom: 2px solid;
+  border-bottom: 2px solid;
 }
 .ui.menu .item:hover {
-color: #fff !important;
+  color: #fff !important;
 }
 #navigation .ui.inverted.header {
-margin-top: 0;
-font-family: Montserrat;
-font-size: 2.28rem;
-margin-bottom: 16px;
+  margin-top: 0;
+  font-family: Montserrat;
+  font-size: 2.28rem;
+  margin-bottom: 16px;
 }
-.sub-header-navigation .item>a {
+.sub-header-navigation .item > a {
   font-size: 1.15rem;
 }
 
 #navigation .sub-header-navigation {
-  margin-top: 16px; 
+  margin-top: 16px;
 }
 
 #header img {
-float: right;
+  float: right;
 }
 div.player-container {
-position: relative;
-overflow: hidden;
-padding-top: 56.25%;
+  position: relative;
+  overflow: hidden;
+  padding-top: 56.25%;
 }
 iframe.player {
-position: absolute;
-top: 0;
-left: 0;
-width: 100%;
-height: 100%;
-border: 0;
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
 }
 
 .page-header img {
   float: right;
 }
 
-.feed.programs h1>a{
+.feed.programs h1 > a {
   color: #075391;
 }
 .feed.programs section.latest_program {
@@ -145,8 +144,9 @@ border: 0;
 .feed.programs section.latest_program .description {
   margin: 0.75em 0;
 }
-.feed.programs h1, .feed.programs .title {
-font-family: Montserrat;
+.feed.programs h1,
+.feed.programs .title {
+  font-family: Montserrat;
 }
 
 .scripture.tab h2 {
@@ -168,13 +168,13 @@ font-family: Montserrat;
 }
 
 .centered.cards[data-title="minitries-page"] .content .header {
-font-family: Montserrat !important;
-font-size: 1em !important;
+  font-family: Montserrat !important;
+  font-size: 1em !important;
 }
 
 .centered.cards[data-title="minitries-page"] .content .description {
   line-height: 1.5em;
-  font-size: .7em;
+  font-size: 0.7em;
 }
 
 .ui.secondary.pointing.menu .header.item a {
@@ -183,4 +183,9 @@ font-size: 1em !important;
 
 .page-nav ul li {
   margin-right: 1.5em !important;
+}
+
+.page-loader {
+  display: none;
+  text-align: center;
 }

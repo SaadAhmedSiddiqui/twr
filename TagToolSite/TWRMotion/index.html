@@ -36,6 +36,7 @@
 
   <div class="page-content-wrapper">
     <div class="page-body">
+      <div class="page-loader" style="display: none">Loading...</div>
       <div class="container">
         <div class="page-content-container"></div>
         <!-- <Content append here-->
@@ -47,13 +48,13 @@
         <div id="carousel" class="carousel" style="height: 456px">
           <ul class="slides">
             <!-- <li>
-              <img src="/images/scaled/218374/c480x480/img.jpg" />
-            </li>
-            <li class="video">
-              <a href="/media/video/custom/218383.mp4">
-                <span class="play">Play Video</span><img src="/images/scaled/218384/c480x480/img.jpg" alt="" />
-              </a>
-            </li> -->
+                <img src="/images/scaled/218374/c480x480/img.jpg" />
+              </li>
+              <li class="video">
+                <a href="/media/video/custom/218383.mp4">
+                  <span class="play">Play Video</span><img src="/images/scaled/218384/c480x480/img.jpg" alt="" />
+                </a>
+              </li> -->
           </ul>
           <ul class="thumbnails">
             <li class=""><span></span></li>
@@ -89,7 +90,9 @@
   (function () {
     "use strict";
 
-    function fetchStrapiSite(env_key = "live") {
+    const a = "<!lang:Ministries>";
+    const youtubeApiKey = "AIzaSyABbOMX4F6PkI42b7TcebY7hXSAN04ODfM";
+    function fetchStrapiSite(env_key = "local") {
       const [_, basePath] = window.location.pathname.split("/");
       const config = {
         local: {
@@ -148,24 +151,32 @@
       let terms = localStorage.getItem("storageLanguageTerms");
       if (terms) {
         terms = JSON.parse(terms);
-        terms = terms.map((term) => `<!lang:${term}>`);
+        terms = terms.map((term) => `<!lang${":" + term}>`);
         window.pageData = {
-          languageId,
+          languageId: languageId,
           pagePath: "/ccim-site",
-          terms,
+          terms: [
+            "<!lang:Cross Currents International Ministries>",
+            "<!lang:Ministries>",
+            "<!lang:Languages>",
+            "<!lang:Filter Ministries...>",
+            "<!lang:Error loading ministries>",
+            "<!lang:Not Found>",
+            "<!lang:No Ministries found in this language.>",
+            "<!lang:Filter Languages...>",
+            "<!lang:Error loading languages>",
+          ],
           ministries: [],
           ytPlaylistId: "PLGvlQXvCCsYVf8kBebPuWZYbQ1bnKrFFc",
           ytKey: "AIzaSyABbOMX4F6PkI42b7TcebY7hXSAN04ODfM",
         };
       }
     }
-    console.log("===pagedata===", window.pageData);
 
     setTimeout(async function () {
       window.FN_JOIN_PATH = FN_JOIN_PATH;
 
       const site = await fetchStrapiSite();
-      console.log("sitesData", site);
       if (site) {
         const page = getPage(site);
         generateSite(site, page);
@@ -213,25 +224,25 @@
           if (header?.sub_header) {
             $(".page-header>.container").css({ display: "none" });
             $(".page-header").append(`
-      <div class="wrapper">
-        <div id="navigation" class="ui container">
-          ${
-            header?.sub_header.logo?.data
-              ? `<img src="${header?.sub_header.logo?.data?.attributes?.url}" class="ui image" />`
-              : ``
-          }
-          <h1 class="ui inverted header" ${
-            site.sub_title ? 'style="margin-bottom: 5px;"' : ""
-          }>${site.title}</h1>
-          ${
-            site.sub_title
-              ? `<h4 style="margin: 0px;">${site.sub_title}</h4>`
-              : ``
-          }
-          <div class="ui inverted secondary stackable menu sub-header-navigation"></div>
+        <div class="wrapper">
+          <div id="navigation" class="ui container">
+            ${
+              header?.sub_header.logo?.data
+                ? `<img src="${header?.sub_header.logo?.data?.attributes?.url}" class="ui image" />`
+                : ``
+            }
+            <h1 class="ui inverted header" ${
+              site.sub_title ? 'style="margin-bottom: 5px;"' : ""
+            }>${site.title}</h1>
+            ${
+              site.sub_title
+                ? `<h4 style="margin: 0px;">${site.sub_title}</h4>`
+                : ``
+            }
+            <div class="ui inverted secondary stackable menu sub-header-navigation"></div>
+          </div>
         </div>
-      </div>
-      `);
+        `);
           }
 
           if (site.nav_bar && site.header?.sub_header) {
@@ -246,8 +257,8 @@
                   );
               $(".page-header .sub-header-navigation").append(
                 `<div class="item" data-title="${nav.page.data?.attributes.title}">
-              <a ${navAction}>${nav.short_title}</a>
-            </div>`
+                <a ${navAction}>${nav.short_title}</a>
+              </div>`
               );
               // <a class="selected" href="${nav.external_link}">${nav.short_title}</a>
               return nav;
@@ -257,9 +268,9 @@
           if (site.header?.sub_header?.show_donate_button) {
             $(".page-header .sub-header-navigation").append(
               `<div id="donate" class="item">
-                <a href="${site.header?.sub_header?.donate_button_link}" class="ui basic inverted button" role="button">
-                  <i aria-hidden="true" class="heart icon"></i>Donate</a>
-              </div>`
+                  <a href="${site.header?.sub_header?.donate_button_link}" class="ui basic inverted button" role="button">
+                    <i aria-hidden="true" class="heart icon"></i>Donate</a>
+                </div>`
             );
           }
         }
@@ -288,22 +299,22 @@
           right_side_details?.actions_buttons?.forEach((button, index) => {
             if (actionIconDefination[button.icon] == "favorite") {
               $(".ministry-actions").append(`<li class="user-prefs">
-                              <div class="favorite">
-                                  <div class="toggle" style="background: ${button.color};">${button.label}</div>
-                              </div>
-                           </li>`);
+                                <div class="favorite">
+                                    <div class="toggle" style="background: ${button.color};">${button.label}</div>
+                                </div>
+                             </li>`);
             } else {
               $(".ministry-actions").append(`<li class="${
                 actionIconDefination[button.icon]
               }">
-                          <a ${
-                            button.link ? 'href="' + button.link + '"' : ""
-                          } ${
+                            <a ${
+                              button.link ? 'href="' + button.link + '"' : ""
+                            } ${
                 button.link ? 'target="_blank"' : ""
               } onclick="(()=>{console.log('clicked on action button')})()" style="background: ${
                 button.color
               };">${button.label}</a>
-                       </li>`);
+                         </li>`);
             }
           });
 
@@ -313,17 +324,17 @@
             right_side_details?.about_description
           ) {
             $(".ministry-overview").append(`<div>
-                          <h2 class="desktop-only">${right_side_details?.about_title}</h2>
-                          <p>${right_side_details?.about_description}</p>
-                       </div>`);
+                            <h2 class="desktop-only">${right_side_details?.about_title}</h2>
+                            <p>${right_side_details?.about_description}</p>
+                         </div>`);
           }
 
           //Creating ministry links
           right_side_details?.action_links?.forEach((linkData, index) => {
             $(".ministry-links").append(`<section class="speaker">
-                          <h2>${linkData.label}</h2>
-                          <p><span><a href="${linkData.link}" target="_blank">${linkData.link_text}</a></span> </p>
-                       </section>`);
+                            <h2>${linkData.label}</h2>
+                            <p><span><a href="${linkData.link}" target="_blank">${linkData.link_text}</a></span> </p>
+                         </section>`);
           });
 
           //Creating ministry social links
@@ -365,8 +376,6 @@
         }
 
         function FN_SELECT_PAGE(page) {
-          console.log("===selectPage==", page);
-
           window.FN_GENERATE_TAB_BAR(
             window.JS_SITE_META,
             page,
@@ -396,33 +405,31 @@
         function FN_GENERATE_PAGE(page) {
           window.JS_SITE_SELECTED_PAGE = page;
           const {
-            body: [
-              {
-                __component,
-                content: { data },
-                style_type,
-              },
-            ],
+            body: [{ __component, content: { data = [] } = {}, style_type }],
             title,
             page_config,
           } = page.page.data?.attributes;
+
           const pageContentContainer = $(".page-content-container");
           pageContentContainer.attr("class", "page-content-container");
           pageContentContainer.attr("data-title", title);
 
           let renderer;
+          let fetcher = () => Promise.resolve([]);
           switch (__component) {
             case "data-body.audio-feeds":
               pageContentContainer.addClass(
                 "feed programs recent_programs tab current"
               );
               renderer = generateAudioVideoPage;
+              fetcher = fetchAudioVideoPage;
               break;
             case "data-body.video-feeds":
               pageContentContainer.addClass(
                 "feed programs recent_programs tab current"
               );
               renderer = generateAudioVideoPage;
+              fetcher = fetchAudioVideoPage;
               break;
             case "data-body.blog":
               pageContentContainer.addClass("ui container");
@@ -454,6 +461,10 @@
               pageContentContainer.addClass("ui container");
               renderer = generatePostsPage;
               break;
+            case "data-body.youtube-playlist":
+              pageContentContainer.addClass("ui container");
+              renderer = generateYoutubePlaylistPage;
+              break;
             default:
               console.log("==No Page Found==");
           }
@@ -461,6 +472,7 @@
           const PAGE_SIZE = page_config?.paginationSize || 0;
           const pageCount = PAGE_SIZE ? Math.ceil(data.length / PAGE_SIZE) : 1;
           window.JS_SITE_LIST_RENDER_FN = renderer;
+          window.JS_SITE_LIST_FETCHER_FN = fetcher;
           window.JS_PAGINATOR = {
             PAGE_SIZE,
             currentPage: 1,
@@ -469,26 +481,38 @@
           };
           window.JS_PAGINATOR.selectPaginator(
             renderer,
+            fetcher,
             page,
             window.JS_PAGINATOR.currentPage
           );
 
-          function selectPaginator(renderer, page, currentPage) {
+          async function selectPaginator(renderer, fetcher, page, currentPage) {
             const pageContentContainer = $(".page-content-container");
             pageContentContainer.empty();
 
             this.currentPage = currentPage;
-            const data = page.page.data?.attributes.body[0].content.data;
+            if (page.page.data && !page.page.data.attributes.body[0].content) {
+              page.page.data.attributes.body[0].content = { data: [] };
+            }
+            let data = page.page.data?.attributes.body[0].content.data;
             if (!data) {
               return;
             }
+
+            let serverData =
+              page.page.data.attributes.body[0].content.serverData;
+            if (!serverData) {
+              serverData = await fetcher(page, data);
+              page.page.data.attributes.body[0].content.serverData = serverData;
+            }
+            data = serverData.concat(data);
 
             const { pageCount } = this;
             let displayedData = data;
             if (pageCount <= 1) {
               page.page.data.attributes.body[0].content.displayedData =
                 displayedData;
-              return renderer(page, pageContentContainer, displayedData);
+              return renderer(page, pageContentContainer, displayedData, 1);
             }
 
             const end = currentPage * this.PAGE_SIZE;
@@ -496,7 +520,7 @@
             displayedData = data.slice(start, end);
             page.page.data.attributes.body[0].content.displayedData =
               displayedData;
-            renderer(page, pageContentContainer, displayedData);
+            renderer(page, pageContentContainer, displayedData, currentPage);
 
             const footerStr = `<footer><ol class="pager"></ol></footer>`;
             const pagerElement = pageContentContainer
@@ -542,7 +566,7 @@
               aElement.setAttribute("href", "javascript:void(0)");
               aElement.setAttribute(
                 "onclick",
-                `JS_PAGINATOR.selectPaginator(window.JS_SITE_LIST_RENDER_FN, window.JS_SITE_SELECTED_PAGE, ${pageNo});`
+                `JS_PAGINATOR.selectPaginator(window.JS_SITE_LIST_RENDER_FN, window.JS_SITE_LIST_FETCHER_FN, window.JS_SITE_SELECTED_PAGE, ${pageNo});`
               );
 
               liElement.append(aElement);
@@ -557,14 +581,52 @@
             }
           }
 
+          function fetchAudioVideoPage(page, mainData) {
+            const {
+              body: [{ add_recent_feeds }],
+            } = page.page.data?.attributes;
+            if (!add_recent_feeds?.ministry_id) {
+              return Promise.resolve([]);
+            }
+
+            $(".page-loader").css("display", "block");
+            const recentFeedsUrl = `https://www.twr360.org/programs/jsonFeed/ministry_id,${add_recent_feeds.ministry_id}/language_id,${languageId}`;
+
+            return fetch(recentFeedsUrl)
+              .then((response) => response.json())
+              .then((response) => {
+                let recentFeedsfiltered = [];
+                if (response && response.recent_items?.length) {
+                  recentFeedsfiltered = response.recent_items.map((feed) => {
+                    let feedObj = {
+                      attributes: {
+                        title: feed.title || "",
+                        description: feed.description || "",
+                        date: feed.date_formatted,
+                        media_url:
+                          __component.indexOf("video") !== -1
+                            ? feed?.video[0].url
+                            : feed.audio?.url,
+                      },
+                    };
+                    return feedObj;
+                  });
+                }
+                $(".page-loader").css("display", "none");
+                return recentFeedsfiltered;
+              })
+              .catch((error) => console.error("Error:", error));
+          }
+
           function generateAudioVideoPage(
             page,
             pageContentContainer,
-            displayedData
+            displayedData,
+            currentPageIndex
           ) {
             const {
               page_config,
-              body: [{ __component }],
+              body: [{ __component, add_recent_feeds }],
             } = page.page.data?.attributes;
 
             const hightlightFirstItem =
@@ -573,7 +635,9 @@
             displayedData.forEach(({ attributes }, index) => {
               let feed = attributes;
               pageContentContainer.append(`<section class="${
-                hightlightFirstItem && index === 0 ? "latest_program" : ""
+                hightlightFirstItem && currentPageIndex === 1 && index === 0
+                  ? "latest_program"
+                  : ""
               }">
                           <header>
                               <h1><a href="#">${feed.title}</a></h1>
@@ -636,14 +700,14 @@
           ) {
             displayedData.forEach(({ attributes }, index) => {
               pageContentContainer.append(`<section>
-                            <h2>${attributes.title}</h2>
-                            <ul class="scripture-list multi-link-${index}"></ul>
-                         </section>`);
+                              <h2>${attributes.title}</h2>
+                              <ul class="scripture-list multi-link-${index}"></ul>
+                           </section>`);
 
               attributes.links?.forEach((link) => {
                 $(`.scripture-list.multi-link-${index}`).append(`<li>
-                                <a href="${link.url}">${link.label}</a>
-                             </li>`);
+                                  <a href="${link.url}">${link.label}</a>
+                               </li>`);
               });
             });
           }
@@ -660,12 +724,12 @@
             const md = window.markdownit();
             const markdownHtml = md.render(blogMarkdownText);
             pageContentContainer.append(`
-          <div>
-            <div class="ui text container" data-title="blog-page">
-              ${markdownHtml}
+            <div>
+              <div class="ui text container" data-title="blog-page">
+                ${markdownHtml}
+              </div>
             </div>
-          </div>
-        `);
+          `);
           }
 
           function generateLanguagesPage(
@@ -680,23 +744,25 @@
 
             if (style_type == "page") {
               pageContentContainer.append(`
-          <div>
-            <div class="ui pointing secondary stackable menu ${
-              !show_title && !show_search_box ? "display-none" : ""
-            }">
-              <h2 class="header item ${
-                !show_title ? "display-none" : ""
-              }">${title}</h2>
-              <div class="right item ${!show_search_box ? "display-none" : ""}">
-                <div class="ui icon input">
-                  <input placeholder="Filter ${title}..." type="text" id="input-search-box">
-                  <i aria-hidden="true" class="search icon"></i>
+            <div>
+              <div class="ui pointing secondary stackable menu ${
+                !show_title && !show_search_box ? "display-none" : ""
+              }">
+                <h2 class="header item ${
+                  !show_title ? "display-none" : ""
+                }">${title}</h2>
+                <div class="right item ${
+                  !show_search_box ? "display-none" : ""
+                }">
+                  <div class="ui icon input">
+                    <input placeholder="Filter ${title}..." type="text" id="input-search-box">
+                    <i aria-hidden="true" class="search icon"></i>
+                  </div>
                 </div>
               </div>
+              <div class="ui padded three column grid" data-title="languages-page"></div>
             </div>
-            <div class="ui padded three column grid" data-title="languages-page"></div>
-          </div>
-        `);
+          `);
               displayedData.forEach(({ attributes: language }) => {
                 pageContentContainer
                   .find(`div[data-title="languages-page"]`)
@@ -734,23 +800,25 @@
             } = page.page.data?.attributes;
 
             pageContentContainer.append(`
-          <div>
-            <div class="ui pointing secondary stackable menu ${
-              !show_title && !show_search_box ? "display-none" : ""
-            }">
-              <h2 class="header item ${
-                !show_title ? "display-none" : ""
-              }">${title}</h2>
-              <div class="right item ${!show_search_box ? "display-none" : ""}">
-                <div class="ui icon input">
-                  <input placeholder="Filter ${title}..." type="text" id="input-search-box">
-                  <i aria-hidden="true" class="search icon"></i>
+            <div>
+              <div class="ui pointing secondary stackable menu ${
+                !show_title && !show_search_box ? "display-none" : ""
+              }">
+                <h2 class="header item ${
+                  !show_title ? "display-none" : ""
+                }">${title}</h2>
+                <div class="right item ${
+                  !show_search_box ? "display-none" : ""
+                }">
+                  <div class="ui icon input">
+                    <input placeholder="Filter ${title}..." type="text" id="input-search-box">
+                    <i aria-hidden="true" class="search icon"></i>
+                  </div>
                 </div>
               </div>
+              <div class="ui centered cards" data-title="minitries-page"></div>
             </div>
-            <div class="ui centered cards" data-title="minitries-page"></div>
-          </div>
-        `);
+          `);
 
             displayedData.forEach(({ attributes: ministry }) => {
               pageContentContainer
@@ -759,14 +827,14 @@
                   `<a class="ui card data-search-box" href="${
                     ministry.link || "javascript:void(0)"
                   }">
-            <img src="${ministry.image_url}" alt="${
+              <img src="${ministry.image_url}" alt="${
                     ministry.title
                   }" class="ui fluid image"/>
-            <div class="content">
-              <div class="header">${ministry.title}</div>
-              <div class="description">${ministry.description}</div>
-            </div>
-          </a>`
+              <div class="content">
+                <div class="header">${ministry.title}</div>
+                <div class="description">${ministry.description}</div>
+              </div>
+            </a>`
                 );
             });
 
@@ -779,8 +847,6 @@
             pageContentContainer,
             displayedData
           ) {
-            console.log("=== generateMinistryVideosPage ===");
-
             pageContentContainer.append(
               `<div class="ui centered cards" data-title="minitry-videos-page"></div>`
             );
@@ -792,19 +858,19 @@
                   `<a class="ui card data-search-box" href="${
                     ministry.media_url || "javascript:void(0)"
                   }" id="ministry-video-${index}">
-                <img src="${ministry.thumbnail_url}" alt="${
+                  <img src="${ministry.thumbnail_url}" alt="${
                     ministry.title
                   }" class="ui fluid image"/>
 
-                <div class="content">
-                  <div class="header" style="font-size: 1em;">${
-                    ministry.title
-                  }</div>
-                  <div class="description" style="line-height: 1.5em;font-size: .7em;">${
-                    ministry.description
-                  }</div>
-                </div>
-              </a>`
+                  <div class="content">
+                    <div class="header" style="font-size: 1em;">${
+                      ministry.title
+                    }</div>
+                    <div class="description" style="line-height: 1.5em;font-size: .7em;">${
+                      ministry.description
+                    }</div>
+                  </div>
+                </a>`
                 );
 
               $(`#ministry-video-${index}`).magnificPopup({
@@ -834,50 +900,152 @@
             } = page.page.data?.attributes;
 
             pageContentContainer.append(`
-          <div>
-            <div class="ui pointing secondary stackable menu ${
-              !show_title && !show_search_box ? "display-none" : ""
-            }">
-              <h2 class="header item ${
-                !show_title ? "display-none" : ""
-              }">${title}</h2>
-              ${
-                page.url == "prayer-letters"
-                  ? `<div class="right item">
-                  <a href="javascript:void(0)" class="ui basic button" role="button"><i aria-hidden="true" class="mail icon"></i>Subscribe to Prayer Letter</a>
-                </div>`
-                  : ""
-              }
-              <div class="right item ${!show_search_box ? "display-none" : ""}">
-                <div class="ui icon input">
-                  <input placeholder="Filter ${title}..." type="text" id="input-search-box">
-                  <i aria-hidden="true" class="search icon"></i>
+            <div>
+              <div class="ui pointing secondary stackable menu ${
+                !show_title && !show_search_box ? "display-none" : ""
+              }">
+                <h2 class="header item ${
+                  !show_title ? "display-none" : ""
+                }">${title}</h2>
+                ${
+                  page.url == "prayer-letters"
+                    ? `<div class="right item">
+                    <a href="javascript:void(0)" class="ui basic button" role="button"><i aria-hidden="true" class="mail icon"></i>Subscribe to Prayer Letter</a>
+                  </div>`
+                    : ""
+                }
+                <div class="right item ${
+                  !show_search_box ? "display-none" : ""
+                }">
+                  <div class="ui icon input">
+                    <input placeholder="Filter ${title}..." type="text" id="input-search-box">
+                    <i aria-hidden="true" class="search icon"></i>
+                  </div>
                 </div>
               </div>
+              <div class="ui centered cards" data-title="posts-page"></div>
             </div>
-            <div class="ui centered cards" data-title="posts-page"></div>
-          </div>
-        `);
+          `);
 
             displayedData.forEach(({ attributes: post }) => {
               pageContentContainer.find(`div[data-title="posts-page"]`).append(
                 `<a class="ui card data-search-box" href="${
                   post.link || "javascript:void(0)"
                 }">
-            <img src="${post.image_url}" alt="${
+              <img src="${post.image_url}" alt="${
                   post.title
                 }" class="ui fluid image"/>
-            <div class="content">
-              <div class="header">${post.title}</div>
-              <div class="meta">${post.date}</div>
-            </div>
-          </a>`
+              <div class="content">
+                <div class="header">${post.title}</div>
+                <div class="meta">${post.date}</div>
+              </div>
+            </a>`
               );
             });
 
             //Enable Search Bar
             enableSearchBar();
           }
+
+          function generateYoutubePlaylistPage(
+            page,
+            pageContentContainer,
+            displayedData
+          ) {
+            const {
+              body: [{ channel_id }],
+              title,
+            } = page.page.data?.attributes;
+
+            fetch(
+              `https://www.googleapis.com/youtube/v3/playlists?part=snippet&channelId=${channel_id}&key=${youtubeApiKey}&maxResults=100`,
+              {
+                headers: {
+                  referer: "https://www.twr360.org/",
+                },
+              }
+            )
+              .then((x) => x.json())
+              .then((response) => {
+                pageContentContainer.append(
+                  `<div class="ui centered cards" data-title="youtube-playlist-page"></div>`
+                );
+
+                if (!response.items.length) {
+                  pageContentContainer
+                    .find(`div[data-title="youtube-playlistItems-page"]`)
+                    .append(`<div>No Videos Found..!</div>`);
+                }
+                response.items.forEach(({ snippet, id: playlistId }, index) => {
+                  pageContentContainer
+                    .find(`div[data-title="youtube-playlist-page"]`)
+                    .append(
+                      `<a class="ui card data-search-box" id="youtube-playlist-${index}"  onclick="(()=>generateYoutubePlaylistItemsPage('${playlistId}'))()">
+                      <img src="${snippet?.thumbnails?.high?.url}" alt="${snippet.title}" class="ui fluid image"/>
+
+                      <div class="content">
+                        <div class="header" style="font-size: 1em;">${snippet.title}</div>
+                        <div class="description" style="line-height: 1.5em;font-size: .7em;">${snippet.description}</div>
+                      </div>
+                    </a>`
+                    );
+                });
+              });
+          }
+
+          window.generateYoutubePlaylistItemsPage = function (playlistId) {
+            $(".page-content-container").empty();
+
+            fetch(
+              `https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&playlistId=${playlistId}&key=${youtubeApiKey}&maxResults=100`,
+              {
+                headers: {
+                  referer: "https://www.twr360.org/",
+                },
+              }
+            )
+              .then((x) => x.json())
+              .then((response) => {
+                pageContentContainer.append(
+                  `<div class="ui centered cards" data-title="youtube-playlistItems-page"></div>`
+                );
+
+                if (!response.items.length) {
+                  pageContentContainer
+                    .find(`div[data-title="youtube-playlistItems-page"]`)
+                    .append(`<div>No Videos Found..!</div>`);
+                }
+                response.items.forEach(({ snippet }, index) => {
+                  if (snippet.title === "Private video") return;
+                  pageContentContainer
+                    .find(`div[data-title="youtube-playlistItems-page"]`)
+                    .append(
+                      `<a class="ui card data-search-box" id="youtube-playlistItems-${index}" href="https://www.youtube.com/embed/${snippet?.resourceId?.videoId}">
+                      <img src="${snippet?.thumbnails?.high?.url}" alt="${snippet.title}" class="ui fluid image"/>
+
+                      <div class="content">
+                        <div class="header" style="font-size: 1em;">${snippet.title}</div>
+                        <div class="description" style="line-height: 1.5em;font-size: .7em;">${snippet.description}</div>
+                      </div>
+                    </a>`
+                    );
+
+                  $(`#youtube-playlistItems-${index}`).magnificPopup({
+                    type: "iframe",
+                    iframe: {
+                      patterns: {
+                        youtube: {
+                          index: "youtube.com",
+                          id: "v=",
+                          src: `https://www.youtube.com/embed/${snippet?.resourceId?.videoId}`,
+                        },
+                      },
+                      srcAction: "iframe_src",
+                    },
+                  });
+                });
+              });
+          };
 
           function enableSearchBar() {
             $("#input-search-box").on("keyup", function () {
@@ -895,7 +1063,6 @@
         function FN_GENERATE_TAB_BAR(site, page, FN_SELECT_PAGE_ACTION) {
           const tabs_bar = getTabsBar(site, page);
           window.JS_SITE_CURRENT_TAB_BAR = tabs_bar;
-          console.log("tabs_bar", tabs_bar);
           const $pageNav = $(".page-nav").empty();
 
           if (!tabs_bar) {
@@ -926,40 +1093,40 @@
               `window.JS_SITE_CURRENT_TAB_BAR.pages[${index}]`,
               false
             )} style="color: ${font_color || ""};"
-        ${
-          font_hover_color &&
-          `onMouseOver="this.style.color='${font_hover_color}'" onMouseOut="this.style.color='${
-            font_color || ""
-          }'"`
-        }>
-        ${page.page.data?.attributes.title}
-        </a>`;
+          ${
+            font_hover_color &&
+            `onMouseOver="this.style.color='${font_hover_color}'" onMouseOut="this.style.color='${
+              font_color || ""
+            }'"`
+          }>
+          ${page.page.data?.attributes.title}
+          </a>`;
 
           if (style_type === "strip_bar") {
             $pageNav.append(
               `<div class="container tabbed">
-            <ul class="tabs"></ul>
-          </div>`
+              <ul class="tabs"></ul>
+            </div>`
             );
             liGenerator = (pge, index) =>
               $pageNav.find(".container .tabs").append(
                 `<li class="tab-li ${pge.page.data?.attributes.title}-tab"
-            style="cursor: pointer;"
-            data-title="${pge.page.data?.attributes.title}"
-            >${aTagGenerator(pge, index)}</li>`
+              style="cursor: pointer;"
+              data-title="${pge.page.data?.attributes.title}"
+              >${aTagGenerator(pge, index)}</li>`
               );
           } else {
             $pageNav.append(
               `<div class="ui container">
-            <div class="ui pointing secondary stackable menu site-nav-heading-bar"></div>
-          </div>`
+              <div class="ui pointing secondary stackable menu site-nav-heading-bar"></div>
+            </div>`
             );
             liGenerator = (page, index) =>
               $pageNav.find(".site-nav-heading-bar")
                 .append(`<h2 class="header item ${
                 page.page.data?.attributes.title
               }-tab" style="cursor: pointer;"
-            data-title="${page.page.data?.attributes.title}">${aTagGenerator(
+              data-title="${page.page.data?.attributes.title}">${aTagGenerator(
                 page,
                 index
               )}</h2>`);
@@ -1110,57 +1277,4 @@
       }
     }, 0);
   })();
-</script>
-
-<script>
-  // window.pageData = {
-  //   languageId: languageId,
-  //   pagePath: "/ccim-site",
-  //   terms: [
-  //     "<!lang:Cross Currents International Ministries>",
-  //     "<!lang:Ministries>",
-  //     "<!lang:Languages>",
-  //     "<!lang:Filter Ministries...>",
-  //     "<!lang:Error loading ministries>",
-  //     "<!lang:Not Found>",
-  //     "<!lang:No Ministries found in this language.>",
-  //     "<!lang:Filter Languages...>",
-  //     "<!lang:Error loading languages>",
-  //   ],
-  //   ministries: [
-  //     11, 389, 253, 143, 12, 10, 258, 414, 254, 212, 127, 237, 56, 427, 426,
-  //     434, 453, 498,
-  //   ],
-  //   ytPlaylistId: "PLGvlQXvCCsYVf8kBebPuWZYbQ1bnKrFFc",
-  //   ytKey: "AIzaSyABbOMX4F6PkI42b7TcebY7hXSAN04ODfM",
-  // };
-
-  // console.log("===pagedata===", window.pageData);
-  fetch(
-    "https://www.googleapis.com/youtube/v3/playlists?part=snippet&channelId=UCVfwlh9XpX2Y_tQfjeln9QA&key=AIzaSyABbOMX4F6PkI42b7TcebY7hXSAN04ODfM&maxResults=50",
-    {
-      headers: {
-        accept: "application/json, text/plain, */*",
-        "accept-language": "en-GB,en-US;q=0.9,en;q=0.8,ur;q=0.7",
-        priority: "u=1, i",
-        "sec-ch-ua":
-          '"Chromium";v="124", "Google Chrome";v="124", "Not-A.Brand";v="99"',
-        "sec-ch-ua-mobile": "?0",
-        "sec-ch-ua-platform": '"macOS"',
-        "sec-fetch-dest": "empty",
-        "sec-fetch-mode": "cors",
-        "sec-fetch-site": "cross-site",
-        "x-client-data":
-          "CI+2yQEIo7bJAQipncoBCKGMywEIk6HLAQiWossBCIagzQEIucjNARj2yc0BGNiGzgE=",
-      },
-      referrer: "https://www.twr360.org/",
-      referrerPolicy: "strict-origin-when-cross-origin",
-      body: null,
-      method: "GET",
-      mode: "cors",
-      credentials: "omit",
-    }
-  ).then((x) => {
-    console.log("===googleapis===,", x);
-  });
 </script>
